@@ -2,11 +2,16 @@
 #include "Commons.h"
 #include "FileHandle.h"
 
-int getGradeFromFile(char* filename)
+int getGuestFromFile(char* filename)
 {
 	int sub_grade = 0;
 	FILE *fp;
 	errno_t error;
+	char* name;
+	int budget = 0;
+	int count = NUM_OF_GUESTS;
+	int i = 0;
+	guest 
 	error = fopen_s(&fp, filename, "r");
 
 	if (error != 0)
@@ -14,8 +19,12 @@ int getGradeFromFile(char* filename)
 
 	else if (fp)
 	{
-		fscanf_s(fp, "%d", &sub_grade);
-		fclose(fp);
+		for (i = 0; i < count; i++)
+		{
+			fscanf(fp, "%s %d", name, budget);
+			
+		}
+
 	}
 
 	return sub_grade;
