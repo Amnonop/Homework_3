@@ -14,6 +14,11 @@
 #define NUM_OF_ARGC 2
 #define GRADE_DIRECTORY_ARG_INDEX 1
 
+/*declerations*/
+int getGuestsFromFile(char* filename, guest *guests_list[]);
+int getRoomsFromFile(char* filename, room *rooms_list[]);
+void computeGuestsNights(room *rooms_list[], int number_of_rooms, guest *guests_list[], int number_of_guests);
+
 typedef struct _room
 {
 	char *name;
@@ -61,7 +66,7 @@ int getGuestsFromFile(char* filename, guest *guests_list[])
 }
 
 
-void getRoomsFromFile(char* filename, room *rooms_list[])
+int getRoomsFromFile(char* filename, room *rooms_list[])
 {
 	int sub_grade = 0;
 	FILE *fp;
@@ -88,7 +93,6 @@ void getRoomsFromFile(char* filename, room *rooms_list[])
 	}
 	//resutrns number of rooms
 	return i;
-
 }
 
 
@@ -128,5 +132,4 @@ int main(int argc, char *argv[])
 	//num_of_guests = getGuestsFromFile(guests_file,  guests_list);
 	//num_of_rooms = getRoomsFromFile(rooms_file, rooms_list);
 	computeGuestsNights(rooms_list, number_of_rooms, guests_list, number_of_guests);
-
 	return exit_code;
