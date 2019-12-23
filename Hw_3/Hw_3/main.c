@@ -18,6 +18,7 @@
 int getGuestsFromFile(char* filename, guest *guests_list[]);
 int getRoomsFromFile(char* filename, room *rooms_list[]);
 int computeGuestsNights(room *rooms_list[], int number_of_rooms, guest *guests_list[], int number_of_guests);
+void writeLogFile();
 
 typedef struct _room
 {
@@ -119,9 +120,16 @@ int computeGuestsNights(room *rooms_list[], int number_of_rooms, guest *guests_l
 	return max_number_of_nights;
 }
 
-int main(int argc, char *argv[])
+void writeLogFile()
 {
 
+	return 0;
+}
+
+
+
+int main(int argc, char *argv[])
+{
 	/*read rooms - struct #1*/
 	/*read residents - struct #2*/
 	/*devide to rooms - mod(%)*/
@@ -146,6 +154,7 @@ int main(int argc, char *argv[])
 		/*put in rooms*/
 		/*update budget*/
 		/*remove out of money guests*/
+		writeLogFile;
 		number_of_nights--;
 	}
 	return exit_code;
