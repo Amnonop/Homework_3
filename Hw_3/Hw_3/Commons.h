@@ -3,8 +3,11 @@
 
 typedef int EXIT_CODE;
 
-#define FAIL_THRESHOLD 60
-#define NUM_OF_HW 10
+#define NUM_OF_ROOMS 20
+#define NUM_OF_GUESTS 20
+#define MAX_NAME_LENGTH 256
+#define TRUE 1
+#define FALSE 0
 
 typedef enum {
 	TG_SUCCESS,

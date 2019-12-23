@@ -17,7 +17,7 @@
 /*declerations*/
 int getGuestsFromFile(char* filename, guest *guests_list[]);
 int getRoomsFromFile(char* filename, room *rooms_list[]);
-void computeGuestsNights(room *rooms_list[], int number_of_rooms, guest *guests_list[], int number_of_guests);
+int computeGuestsNights(room *rooms_list[], int number_of_rooms, guest *guests_list[], int number_of_guests);
 
 typedef struct _room
 {
@@ -96,8 +96,9 @@ int getRoomsFromFile(char* filename, room *rooms_list[])
 }
 
 
-void computeGuestsNights(room *rooms_list[], int number_of_rooms, guest *guests_list[], int number_of_guests)
+int computeGuestsNights(room *rooms_list[], int number_of_rooms, guest *guests_list[], int number_of_guests)
 {
+	int max_number_of_nights = 0;
 	for (int i = 0; i < number_of_guests; i++)
 	{
 		for (int j = 0; j < number_of_rooms; j++)
@@ -105,12 +106,17 @@ void computeGuestsNights(room *rooms_list[], int number_of_rooms, guest *guests_
 			if (rooms_list[j]->price % guests_list[i]->budget == 0)
 			{
 				guests_list[i]->nights = rooms_list[j]->price / guests_list[i]->budget;
+				if (guests_list[i]->nights > max_number_of_nights)
+				{
+					max_number_of_nights = guests_list[i]->nights;
+				}
 				strcpy_s(guests_list[i]->room, MAX_NAME_LENGTH, rooms_list[j]->name);
 				i++;
 				j = 0;
 			}
 		}
 	}
+	return max_number_of_nights;
 }
 
 int main(int argc, char *argv[])
@@ -123,13 +129,22 @@ int main(int argc, char *argv[])
 	/*remove resident when night to stay  = 0*/
 	/*finish when nights to stay for every resident  = 0*/
 	EXIT_CODE exit_code;
+	int day_counter = 0;
 	int number_of_guests = 0;
 	int number_of_rooms = 0;
 	guest *guests_list[NUM_OF_GUESTS];
 	room *rooms_list[NUM_OF_ROOMS];
+	int number_of_nights = 0;
 	if (argc < NUM_OF_ARGC)
 		return TG_NOT_ENOUGH_COMMAND_LINE_ARGUMENTS;
 	//num_of_guests = getGuestsFromFile(guests_file,  guests_list);
 	//num_of_rooms = getRoomsFromFile(rooms_file, rooms_list);
-	computeGuestsNights(rooms_list, number_of_rooms, guests_list, number_of_guests);
+	number_of_nights = computeGuestsNights(rooms_list, number_of_rooms, guests_list, number_of_guests);
+	while (number_of_nights > 0)
+	{
+		day_counter++;
+		/*put in rooms*/
+		/*remove out of money guests*/
+		number_of_nights--;
+	}
 	return exit_code;
