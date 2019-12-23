@@ -144,6 +144,7 @@ int main(int argc, char *argv[])
 	{
 		day_counter++;
 		/*put in rooms*/
+		/*update budget*/
 		/*remove out of money guests*/
 		number_of_nights--;
 	}
