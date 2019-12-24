@@ -13,10 +13,10 @@
 #include "ThreadHandle.h"
 
 /*declerations*/
-int getGuestsFromFile(char* filename, guest *guests_list[]);
-int getRoomsFromFile(char* filename, room *rooms_list[]);
-int computeGuestsNights(room *rooms_list[], int number_of_rooms, guest *guests_list[], int number_of_guests);
-void writeLogFile(guest *guests_list[], room *rooms_list[], int day_counter);
+int getGuestsFromFile(char* filename, guest_t *guests_list[]);
+int getRoomsFromFile(char* filename, room_t *rooms_list[]);
+int computeGuestsNights(room_t *rooms_list[], int number_of_rooms, guest_t *guests_list[], int number_of_guests);
+void writeLogFile(guest_t *guests_list[], room_t *rooms_list[], int day_counter);
 
 typedef struct _room
 {
@@ -40,6 +40,14 @@ typedef struct _guest
 EXIT_CODE runHotel(const char *main_dir_path)
 {
 	EXIT_CODE exit_code = HM_SUCCESS;
+	room_t rooms[NUM_OF_ROOMS];
+	int room_count;
+
+	exit_code = readRoomsFromFile(main_dir_path, rooms, &room_count);
+	if (exit_code != HM_SUCCESS)
+		return exit_code;
+
+
 
 	/*read rooms - struct #1*/
 	/*read residents - struct #2*/
@@ -75,7 +83,7 @@ int getGuestsFromFile(char* filename, guest *guests_list[])
 	int sub_grade = 0;
 	FILE *fp;
 	errno_t error;
-	char* name;
+	char* name = "";
 	int budget = 0;
 	int count = NUM_OF_GUESTS;
 	int i = 0;
@@ -88,7 +96,7 @@ int getGuestsFromFile(char* filename, guest *guests_list[])
 	{
 		for (i = 0; i < count; i++)
 		{
-			fscanf(fp, "%s %d", name, budget);
+			fscanf_s(fp, 256, "%s %d", name, budget);
 			strcpy_s(guests_list[i]->name, MAX_NAME_LENGTH, name);
 			guests_list[i]->budget = budget;
 			//nights left will be filled later
@@ -105,7 +113,7 @@ int getRoomsFromFile(char* filename, room *rooms_list[])
 	int sub_grade = 0;
 	FILE *fp;
 	errno_t error;
-	char* name;
+	char* name = "";
 	int price = 0;
 	int num_of_beds = 0;
 	int count = NUM_OF_GUESTS;
@@ -119,7 +127,7 @@ int getRoomsFromFile(char* filename, room *rooms_list[])
 	{
 		for (i = 0; i < count; i++)
 		{
-			fscanf(fp, "%s %d %d", name, price, num_of_beds);
+			fscanf_s(fp, 256, "%s %d %d", name, price, num_of_beds);
 			strcpy_s(rooms_list[i]->name, MAX_NAME_LENGTH, name);
 			rooms_list[i]->price = price;
 			rooms_list[i]->num_of_beds = num_of_beds;
