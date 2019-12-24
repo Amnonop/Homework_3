@@ -78,19 +78,19 @@ EXIT_CODE readFromFile(char *filename, int *value)
 *	-------
 *	An EXIT_CODE inidcating wether the write operation was succefull.
 **/
-EXIT_CODE writeToFile(char *filename, int value)
+EXIT_CODE writeToFile(char *filename, char *room_name, char *guest_name,char *guest_status, int number_of_guests)
 {
 	FILE *file;
 	errno_t exit_code;
 
-	exit_code = fopen_s(&file, filename, "w");
+	exit_code = fopen_s(&file, "roomsLog.txt", "w");
 	if (exit_code != 0)
 	{
 		printf("An error occured while openning file %s for writing.", filename);
 		return ERROR_OPEN_FILE;
 	}
 
-	fprintf_s(file, "%d", value);
+	fprintf_s(file, "%s %s %s %d", room_name, guest_name, guest_status, number_of_guests);
 
 	fclose(file);
 
