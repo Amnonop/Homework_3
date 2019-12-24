@@ -24,6 +24,9 @@
     <ClCompile Include="ThreadHandle.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="HotelManager.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FileHandle.h">
@@ -33,6 +36,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Commons.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HotelManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

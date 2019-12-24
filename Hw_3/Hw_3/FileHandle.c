@@ -28,7 +28,7 @@ EXIT_CODE readRoomsFromFile(const char *rooms_filename, room_t rooms[], int *roo
 	EXIT_CODE exit_code = HM_SUCCESS;
 	FILE *file;
 	errno_t file_open_code;
-	char *room_info_line;
+	char room_info_line[MAX_LINE_LENGTH];
 	int room_index = 0;
 	
 
