@@ -7,7 +7,11 @@
 #define ROOM_PRICE_INDEX 1
 #define ROOM_MAX_OCCUPANTS_INDEX 2
 
+#define GUEST_NAME_INDEX 0
+#define GUEST_BUDGET_INDEX 1
+
 EXIT_CODE addRoom(char *room_info_line, room_t rooms[], int room_index);
+EXIT_CODE addGuest(char *guest_info_line, guest_t guests[], int guest_index);
 
 /**
 *	Reads information about all rooms in the hotel from the specified file and fills the 
@@ -92,6 +96,91 @@ EXIT_CODE addRoom(char *room_info_line, room_t rooms[], int room_index)
 	}
 
 	rooms[room_index] = room;
+
+	return exit_code;
+}
+
+/**
+*	Reads information about all guests in the hotel from the specified file and fills the
+*	specified guests array.
+*
+*	Accepts
+*	-------
+*	dir_path - the path to the directory containing the rooms file.
+*   guests_filename - a string representing the name of the file containing the guests.
+*	guests - an array to be filled with the guests information.
+*	guest_count - a pointer to an integer which will contain the actual number of guests in the hotel.
+*
+*	Returns
+*	-------
+*	An EXIT_CODE inidcating wether the read operation was succefull.
+**/
+EXIT_CODE readGuestsFromFile(const char *dir_path, const char *guests_filename, guest_t guests[], int *guest_count)
+{
+	EXIT_CODE exit_code = HM_SUCCESS;
+	int guests_filepath_length = 0;
+	char *guests_filepath;
+	FILE *file;
+	errno_t file_open_code;
+	char guest_info_line[MAX_LINE_LENGTH];
+	int guest_index = 0;
+
+	guests_filepath_length = strlen(dir_path) + 2 + strlen(guests_filename) + 1;
+	guests_filepath = (char*)malloc(sizeof(char)*guests_filepath_length);
+	sprintf_s(guests_filepath, guests_filepath_length, "%s//%s", dir_path, guests_filename);
+
+	file_open_code = fopen_s(&file, guests_filepath, "r");
+
+	if (file_open_code != 0)
+	{
+		printf("An error occured while openning file %s for reading.", guests_filepath);
+		free(guests_filepath);
+		return HM_FILE_OPEN_FAILED;
+	}
+
+	while (fgets(guest_info_line, MAX_LINE_LENGTH, file) != NULL)
+	{
+		addGuest(guest_info_line, guests, guest_index);
+		guest_index++;
+	}
+
+	fclose(file);
+
+	*guest_count = guest_index;
+
+	free(guests_filepath);
+	return exit_code;
+}
+
+EXIT_CODE addGuest(char *guest_info_line, guest_t guests[], int guest_index)
+{
+	EXIT_CODE exit_code = HM_SUCCESS;
+	const char *delim = " ";
+	char *token;
+	char *next_token;
+	int token_count = GUEST_NAME_INDEX;
+	guest_t guest;
+
+	token = strtok_s(guest_info_line, " ", &next_token);
+	while (token != NULL)
+	{
+		switch (token_count)
+		{
+			case GUEST_NAME_INDEX:
+				strcpy_s(guest.name, MAX_NAME_LENGTH, token);
+				break;
+			case GUEST_BUDGET_INDEX:
+				sscanf_s(token, "%d", &(guest.budget));
+				break;
+			default:
+				break;
+		}
+
+		token = strtok_s(NULL, " ", &next_token);
+		token_count++;
+	}
+
+	guests[guest_index] = guest;
 
 	return exit_code;
 }
