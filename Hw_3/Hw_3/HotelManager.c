@@ -59,6 +59,7 @@ EXIT_CODE runHotel(const char *main_dir_path)
 	HANDLE thread_handles[NUM_OF_GUESTS];
 	guest_thread_input_t thread_inputs[NUM_OF_GUESTS];
 	int threads_count;
+	DWORD threads_wait_result;
 
 	exit_code = readRoomsFromFile(main_dir_path, rooms_filename, rooms, &rooms_count);
 	if (exit_code != HM_SUCCESS)
@@ -85,7 +86,15 @@ EXIT_CODE runHotel(const char *main_dir_path)
 			exit_code = HM_THREAD_CREATE_FAILED;
 			// Cleanup
 		}
+
+		printf("created thread for guest %s\n", guests[threads_count].name);
 	}
+
+	threads_wait_result = WaitForMultipleObjects(
+		guests_count, 
+		thread_handles, 
+		TRUE, 
+		INFINITE);
 
 	/*read rooms - struct #1*/
 	/*read residents - struct #2*/
@@ -124,8 +133,9 @@ DWORD WINAPI guestThread(LPVOID argument)
 	thread_input = (guest_thread_input_t*)argument;
 
 	// Look for a room
+	printf("looking a room for %s\n", thread_input->guest.name);
 	room_index = findRoom(thread_input->guest.budget, thread_input->rooms, thread_input->num_of_rooms);
-	//fprintf("%s can stay in room %d named %s\n", thread_input->guest.name, &room_index, (thread_input->rooms[room_index]).name);
+	printf("%s can stay in room %d named %s\n", thread_input->guest.name, room_index, (thread_input->rooms[room_index]).name);
 }
 
 int findRoom(int budget, room_t rooms[], int num_of_rooms)

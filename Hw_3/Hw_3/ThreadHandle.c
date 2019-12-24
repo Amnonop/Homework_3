@@ -27,11 +27,11 @@ HANDLE createThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 		printf("Received null pointer");
 	}
 
-	if (NULL == p_thread_id)
+	/*if (NULL == p_thread_id)
 	{
 		printf("Error when creating a thread");
 		printf("Received null pointer");
-	}
+	}*/
 
 	thread_handle = CreateThread(
 		NULL,                /*  default security attributes */
