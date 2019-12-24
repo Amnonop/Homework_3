@@ -25,6 +25,7 @@ typedef struct _room
 	char *name;
 	int price;
 	int num_of_beds;
+	int num_of_guests;
 	HANDLE room_mutex_handle;
 } room;
 
@@ -34,6 +35,7 @@ typedef struct _guest
 	int budget;
 	int nights;
 	char *room;
+	char *status;
 	HANDLE guestt_mutex_handle;
 } guest;
 
@@ -100,6 +102,10 @@ int getRoomsFromFile(char* filename, room *rooms_list[])
 int computeGuestsNights(room *rooms_list[], int number_of_rooms, guest *guests_list[], int number_of_guests)
 {
 	int max_number_of_nights = 0;
+	for (int i = 0; i < number_of_rooms; i++)
+	{
+		rooms_list[i]->num_of_guests = 0;
+	}
 	for (int i = 0; i < number_of_guests; i++)
 	{
 		for (int j = 0; j < number_of_rooms; j++)
@@ -111,7 +117,6 @@ int computeGuestsNights(room *rooms_list[], int number_of_rooms, guest *guests_l
 				{
 					max_number_of_nights = guests_list[i]->nights;
 				}
-				strcpy_s(guests_list[i]->room, MAX_NAME_LENGTH, rooms_list[j]->name);
 				i++;
 				j = 0;
 			}
@@ -120,9 +125,44 @@ int computeGuestsNights(room *rooms_list[], int number_of_rooms, guest *guests_l
 	return max_number_of_nights;
 }
 
+
+
+int computeGuestsInRooms(room *rooms_list[], int number_of_rooms, guest *guests_list[], int number_of_guests)
+{
+	for (int i = 0; i < number_of_guests; i++)
+	{
+		for (int j = 0; j < number_of_rooms; j++)
+		{
+			if (rooms_list[j]->price % guests_list[i]->budget == 0)
+			{
+				if (rooms_list[j]->num_of_guests < rooms_list[j]->num_of_beds)
+				{
+					strcpy_s(guests_list[i]->room, MAX_NAME_LENGTH, rooms_list[j]->name);
+					rooms_list[j]->num_of_guests++;
+					strcpy_s(guests_list[i]->status, 5, "IN");
+					guests_list[i]->nights--;
+					if (guests_list[i]->nights < 0)
+					{
+						strcpy_s(guests_list[i]->status, 5, "OUT");
+					}
+				}
+				else
+				{
+					strcpy_s(guests_list[i]->status, 4, "WAITING");
+				}
+				i++;
+				j = 0;
+			}
+		}
+	}
+}
+
+
+
 void writeLogFile(guest *guests_list[],room *rooms_list,int day_counter)
 {
 	
+	writeToFile;
 	return 0;
 }
 
