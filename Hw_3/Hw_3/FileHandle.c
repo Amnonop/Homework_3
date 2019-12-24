@@ -15,6 +15,7 @@ EXIT_CODE addRoom(char *room_info_line, room_t rooms[], int room_index);
 *
 *	Accepts
 *	-------
+*	dir_path - the path to the directory containing the rooms file.
 *   rooms_filename - a string representing the name of the file containing the rooms.
 *	rooms - an array to be filled with the rooms information.
 *	rooms_count - a pointer to an integer which will contain the actual number of rooms in the hotel.
@@ -23,20 +24,26 @@ EXIT_CODE addRoom(char *room_info_line, room_t rooms[], int room_index);
 *	-------
 *	An EXIT_CODE inidcating wether the read operation was succefull.
 **/
-EXIT_CODE readRoomsFromFile(const char *rooms_filename, room_t rooms[], int *rooms_count)
+EXIT_CODE readRoomsFromFile(const char *dir_path, const char *rooms_filename, room_t rooms[], int *rooms_count)
 {
 	EXIT_CODE exit_code = HM_SUCCESS;
+	int rooms_filepath_length = 0;
+	char *rooms_filepath;
 	FILE *file;
 	errno_t file_open_code;
 	char room_info_line[MAX_LINE_LENGTH];
 	int room_index = 0;
-	
 
-	file_open_code = fopen_s(&file, rooms_filename, "r");
+	rooms_filepath_length = strlen(dir_path) + 2 + strlen(rooms_filename) + 1;
+	rooms_filepath = (char*)malloc(sizeof(char)*rooms_filepath_length);
+	sprintf_s(rooms_filepath, rooms_filepath_length, "%s//%s", dir_path, rooms_filename);
+
+	file_open_code = fopen_s(&file, rooms_filepath, "r");
 
 	if (file_open_code != 0)
 	{
-		printf("An error occured while openning file %s for reading.", rooms_filename);
+		printf("An error occured while openning file %s for reading.", rooms_filepath);
+		free(rooms_filepath);
 		return HM_FILE_OPEN_FAILED;
 	}
 
@@ -50,6 +57,7 @@ EXIT_CODE readRoomsFromFile(const char *rooms_filename, room_t rooms[], int *roo
 
 	*rooms_count = room_index;
 
+	free(rooms_filepath);
 	return exit_code;
 }
 
@@ -59,12 +67,10 @@ EXIT_CODE addRoom(char *room_info_line, room_t rooms[], int room_index)
 	const char *delim = " ";
 	char *token;
 	char *next_token;
-	int line_length;
 	int token_count = ROOM_NAME_INDEX;
 	room_t room;
 
-	line_length = strlen(room_info_line);
-	token = strtok_s(room_info_line, line_length, delim, &next_token);
+	token = strtok_s(room_info_line, " ", &next_token);
 	while (token != NULL)
 	{
 		switch (token_count)
@@ -73,15 +79,15 @@ EXIT_CODE addRoom(char *room_info_line, room_t rooms[], int room_index)
 				strcpy_s(room.name, MAX_NAME_LENGTH, token);
 				break;
 			case ROOM_PRICE_INDEX:
-				scanf_s("%d", &room.price);
+				sscanf_s(token, "%d", &(room.price));
 				break;
 			case ROOM_MAX_OCCUPANTS_INDEX:
-				scanf_s("%d", &room.max_occupants);
+				sscanf_s(token, "%d", &(room.max_occupants));
 			default:
 				break;
 		}
 
-		token = strtok_s(NULL, line_length, delim, &next_token);
+		token = strtok_s(NULL, " ", &next_token);
 		token_count++;
 	}
 

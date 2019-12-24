@@ -22,6 +22,7 @@ typedef struct room
 *
 *	Accepts
 *	-------
+*	dir_path - the path to the directory containing the rooms file.
 *   rooms_filename - a string representing the name of the file containing the rooms.
 *	rooms - an array to be filled with the rooms information.
 *	rooms_count - a pointer to an integer which will contain the actual number of rooms in the hotel.
@@ -30,7 +31,7 @@ typedef struct room
 *	-------
 *	An EXIT_CODE inidcating wether the read operation was succefull.
 **/
-EXIT_CODE readRoomsFromFile(const char *rooms_filename, room_t rooms[], int *rooms_count);
+EXIT_CODE readRoomsFromFile(const char *dir_path, const char *rooms_filename, room_t rooms[], int *rooms_count);
 
 /**
 *	reads a single value from the file specified in filename.

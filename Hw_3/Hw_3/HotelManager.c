@@ -39,15 +39,14 @@ typedef struct _guest
 
 EXIT_CODE runHotel(const char *main_dir_path)
 {
+	const char *rooms_filename = "rooms.txt";
 	EXIT_CODE exit_code = HM_SUCCESS;
 	room_t rooms[NUM_OF_ROOMS];
 	int room_count;
 
-	exit_code = readRoomsFromFile(main_dir_path, rooms, &room_count);
+	exit_code = readRoomsFromFile(main_dir_path, rooms_filename, rooms, &room_count);
 	if (exit_code != HM_SUCCESS)
 		return exit_code;
-
-
 
 	/*read rooms - struct #1*/
 	/*read residents - struct #2*/
