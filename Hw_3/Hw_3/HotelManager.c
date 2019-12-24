@@ -39,7 +39,9 @@ typedef struct _guest
 
 typedef struct _guest_thread_input
 {
-	int *rooms;
+	guest_t guest;
+	room_t *rooms;
+	int num_of_rooms;
 } guest_thread_input_t;
 
 DWORD WINAPI guestThread(LPVOID argument);
@@ -68,7 +70,9 @@ EXIT_CODE runHotel(const char *main_dir_path)
 
 	for (threads_count = 0; threads_count < guests_count; threads_count++)
 	{
+		thread_inputs[threads_count].guest = guests[threads_count];
 		thread_inputs[threads_count].rooms = rooms;
+		thread_inputs[threads_count].num_of_rooms = rooms_count;
 
 		thread_handles[threads_count] = createThreadSimple(
 			(LPTHREAD_START_ROUTINE)guestThread, 
@@ -110,6 +114,31 @@ EXIT_CODE runHotel(const char *main_dir_path)
 	}
 
 	return exit_code;
+}
+
+DWORD WINAPI guestThread(LPVOID argument)
+{
+	guest_thread_input_t *thread_input;
+	int room_index = -1;
+
+	thread_input = (guest_thread_input_t*)argument;
+
+	// Look for a room
+	room_index = findRoom(thread_input->guest.budget, thread_input->rooms, thread_input->num_of_rooms);
+	//fprintf("%s can stay in room %d named %s\n", thread_input->guest.name, &room_index, (thread_input->rooms[room_index]).name);
+}
+
+int findRoom(int budget, room_t rooms[], int num_of_rooms)
+{
+	int i;
+
+	for (i = 0; i < num_of_rooms; i++)
+	{
+		if ((budget % rooms[i].price) == 0)
+			break;
+	}
+
+	return i;
 }
 
 int getGuestsFromFile(char* filename, guest *guests_list[])
