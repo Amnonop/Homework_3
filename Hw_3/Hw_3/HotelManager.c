@@ -37,6 +37,13 @@ typedef struct _guest
 	HANDLE guestt_mutex_handle;
 } guest;
 
+typedef struct _guest_thread_input
+{
+	int *rooms;
+} guest_thread_input_t;
+
+DWORD WINAPI guestThread(LPVOID argument);
+
 EXIT_CODE runHotel(const char *main_dir_path)
 {
 	const char *rooms_filename = "rooms.txt";
@@ -47,6 +54,10 @@ EXIT_CODE runHotel(const char *main_dir_path)
 	int rooms_count;
 	int guests_count;
 
+	HANDLE thread_handles[NUM_OF_GUESTS];
+	guest_thread_input_t thread_inputs[NUM_OF_GUESTS];
+	int threads_count;
+
 	exit_code = readRoomsFromFile(main_dir_path, rooms_filename, rooms, &rooms_count);
 	if (exit_code != HM_SUCCESS)
 		return exit_code;
@@ -54,6 +65,23 @@ EXIT_CODE runHotel(const char *main_dir_path)
 	exit_code = readGuestsFromFile(main_dir_path, guests_filename, guests, &guests_count);
 	if (exit_code != HM_SUCCESS)
 		return exit_code;
+
+	for (threads_count = 0; threads_count < guests_count; threads_count++)
+	{
+		thread_inputs[threads_count].rooms = rooms;
+
+		thread_handles[threads_count] = createThreadSimple(
+			(LPTHREAD_START_ROUTINE)guestThread, 
+			(LPVOID)&(thread_inputs[threads_count]), 
+			NULL);
+
+		if (thread_handles[threads_count] == NULL)
+		{
+			printf("Failed to create thread. Terminating.\n");
+			exit_code = HM_THREAD_CREATE_FAILED;
+			// Cleanup
+		}
+	}
 
 	/*read rooms - struct #1*/
 	/*read residents - struct #2*/
