@@ -42,7 +42,10 @@ typedef struct _guest_thread_input
 	guest_t guest;
 	room_t *rooms;
 	int num_of_rooms;
+	HANDLE *room_semaphore_handles;
 } guest_thread_input_t;
+
+HANDLE room_semaphore_handles[NUM_OF_ROOMS];
 
 DWORD WINAPI guestThread(LPVOID argument);
 
@@ -56,7 +59,7 @@ EXIT_CODE runHotel(const char *main_dir_path)
 	int rooms_count;
 	int guests_count;
 
-	HANDLE room_semaphore_handles[NUM_OF_ROOMS];
+	
 	int room_semaphores_count;
 
 	HANDLE thread_handles[NUM_OF_GUESTS];
@@ -77,7 +80,7 @@ EXIT_CODE runHotel(const char *main_dir_path)
 	{
 		room_semaphore_handles[room_semaphores_count] = CreateSemaphore(
 			NULL,												/* Default security attributes */
-			0,													/* Initial Count - the room is empty */
+			rooms[room_semaphores_count].max_occupants,			/* Initial Count - the room is empty */
 			rooms[room_semaphores_count].max_occupants,			/* Maximum Count */
 			NULL);												/* un-named */
 
@@ -94,6 +97,7 @@ EXIT_CODE runHotel(const char *main_dir_path)
 		thread_inputs[threads_count].guest = guests[threads_count];
 		thread_inputs[threads_count].rooms = rooms;
 		thread_inputs[threads_count].num_of_rooms = rooms_count;
+		thread_inputs[threads_count].room_semaphore_handles = room_semaphore_handles;
 
 		thread_handles[threads_count] = createThreadSimple(
 			(LPTHREAD_START_ROUTINE)guestThread, 
@@ -149,6 +153,9 @@ DWORD WINAPI guestThread(LPVOID argument)
 {
 	guest_thread_input_t *thread_input;
 	int room_index = -1;
+	DWORD room_wait_result;
+	DWORD room_release_result;
+	LONG previous_count;
 
 	thread_input = (guest_thread_input_t*)argument;
 
@@ -158,6 +165,28 @@ DWORD WINAPI guestThread(LPVOID argument)
 	printf("%s can stay in room %d named %s\n", thread_input->guest.name, room_index, (thread_input->rooms[room_index]).name);
 
 	// Use a semaphore to enter the room
+	printf("%s waiting to enter room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
+	room_wait_result = WaitForSingleObject(room_semaphore_handles[room_index], INFINITE);
+	if (room_wait_result != WAIT_OBJECT_0)
+	{
+		// Report error
+	}
+
+	/* Start critical section */
+
+	printf("%s entered room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
+
+	// Wait the number of nights the guest can stay
+
+	/* End criticial section */
+
+	room_release_result = ReleaseSemaphore(room_semaphore_handles[room_index], 1, &previous_count); /* can set previous to null if not interested*/
+	if (room_release_result == FALSE)
+	{
+		// Report error
+	}
+
+	printf("%s left room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
 }
 
 int findRoom(int budget, room_t rooms[], int num_of_rooms)
