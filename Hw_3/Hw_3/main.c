@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
 	room *rooms_list[NUM_OF_ROOMS];
 	int number_of_nights = 0;
 	if (argc < NUM_OF_ARGC)
-		return TG_NOT_ENOUGH_COMMAND_LINE_ARGUMENTS;
+		return HM_NOT_ENOUGH_COMMAND_LINE_ARGUMENTS;
 	//num_of_guests = getGuestsFromFile(guests_file,  guests_list);
 	//num_of_rooms = getRoomsFromFile(rooms_file, rooms_list);
 	number_of_nights = computeGuestsNights(rooms_list, number_of_rooms, guests_list, number_of_guests);

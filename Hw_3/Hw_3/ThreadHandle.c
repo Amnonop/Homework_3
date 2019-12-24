@@ -25,14 +25,14 @@ HANDLE createThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 	{
 		printf("Error when creating a thread");
 		printf("Received null pointer");
-		exit(ERROR_CREATING_THREAD);
+		exit(HM_THREAD_CREATE_FAILED);
 	}
 
 	if (NULL == p_thread_id)
 	{
 		printf("Error when creating a thread");
 		printf("Received null pointer");
-		exit(ERROR_CREATING_THREAD);
+		exit(HM_THREAD_CREATE_FAILED);
 	}
 
 	thread_handle = CreateThread(
@@ -46,7 +46,7 @@ HANDLE createThreadSimple(LPTHREAD_START_ROUTINE p_start_routine,
 	if (NULL == thread_handle)
 	{
 		printf("Couldn't create thread\n");
-		exit(ERROR_CREATING_THREAD);
+		exit(HM_THREAD_CREATE_FAILED);
 	}
 
 	return thread_handle;

@@ -1,37 +1,93 @@
 #include <stdio.h>
+#include <string.h>
 #include "Commons.h"
 #include "FileHandle.h"
 
+#define ROOM_NAME_INDEX 0
+#define ROOM_PRICE_INDEX 1
+#define ROOM_MAX_OCCUPANTS_INDEX 2
 
+EXIT_CODE addRoom(char *room_info_line, room_t rooms[], int room_index);
 
 /**
-*	Reads a grade from a file in the grades directory.
+*	Reads information about all rooms in the hotel from the specified file and fills the 
+*	specified rooms array.
 *
 *	Accepts
 *	-------
-*	grades_directory - a string representing the name of the directory containing the file.
-*   grade_filename - a string representing the name of the file containing the grade.
-*	grade - a pointer to an integer which will contain the grade value that was read.
+*   rooms_filename - a string representing the name of the file containing the rooms.
+*	rooms - an array to be filled with the rooms information.
+*	rooms_count - a pointer to an integer which will contain the actual number of rooms in the hotel.
 *
 *	Returns
 *	-------
 *	An EXIT_CODE inidcating wether the read operation was succefull.
 **/
-EXIT_CODE readGradeFromFile(const char *grades_directory, const char *grade_filename, int *grade)
+EXIT_CODE readRoomsFromFile(const char *rooms_filename, room_t rooms[], int *rooms_count)
 {
-	char *grade_file_path;
-	int filename_length;
-	EXIT_CODE EXIT_CODE;
+	EXIT_CODE exit_code = HM_SUCCESS;
+	FILE *file;
+	errno_t file_open_code;
+	char *room_info_line;
+	int room_index = 0;
+	
 
-	filename_length = strlen(grades_directory) + 2 + strlen(grade_filename) + 1;
-	grade_file_path = (char*)malloc(sizeof(char)*filename_length);
-	sprintf_s(grade_file_path, filename_length, "%s//%s", grades_directory, grade_filename);
+	file_open_code = fopen_s(&file, rooms_filename, "r");
 
-	EXIT_CODE = readFromFile(grade_file_path, grade);
+	if (file_open_code != 0)
+	{
+		printf("An error occured while openning file %s for reading.", rooms_filename);
+		return HM_FILE_OPEN_FAILED;
+	}
 
-	free(grade_file_path);
+	while (fgets(room_info_line, MAX_LINE_LENGTH, file) != NULL)
+	{
+		addRoom(room_info_line, rooms, room_index);
+		room_index++;
+	}
 
-	return EXIT_CODE;
+	fclose(file);
+
+	*rooms_count = room_index;
+
+	return exit_code;
+}
+
+EXIT_CODE addRoom(char *room_info_line, room_t rooms[], int room_index)
+{
+	EXIT_CODE exit_code = HM_SUCCESS;
+	const char *delim = " ";
+	char *token;
+	char *next_token;
+	int line_length;
+	int token_count = ROOM_NAME_INDEX;
+	room_t room;
+
+	line_length = strlen(room_info_line);
+	token = strtok_s(room_info_line, line_length, delim, &next_token);
+	while (token != NULL)
+	{
+		switch (token_count)
+		{
+			case ROOM_NAME_INDEX:
+				strcpy_s(room.name, MAX_NAME_LENGTH, token);
+				break;
+			case ROOM_PRICE_INDEX:
+				scanf_s("%d", &room.price);
+				break;
+			case ROOM_MAX_OCCUPANTS_INDEX:
+				scanf_s("%d", &room.max_occupants);
+			default:
+				break;
+		}
+
+		token = strtok_s(NULL, line_length, delim, &next_token);
+		token_count++;
+	}
+
+	rooms[room_index] = room;
+
+	return exit_code;
 }
 
 /**
@@ -56,7 +112,7 @@ EXIT_CODE readFromFile(char *filename, int *value)
 	if (exit_code != 0)
 	{
 		printf("An error occured while openning file %s for reading.", filename);
-		return ERROR_OPEN_FILE;
+		return HM_FILE_OPEN_FAILED;
 	}
 
 	fscanf_s(file, "%d", value);
@@ -87,12 +143,12 @@ EXIT_CODE writeToFile(char *filename, char *room_name, char *guest_name,char *gu
 	if (exit_code != 0)
 	{
 		printf("An error occured while openning file %s for writing.", filename);
-		return ERROR_OPEN_FILE;
+		return HM_FILE_OPEN_FAILED;
 	}
 
 	fprintf_s(file, "%s %s %s %d", room_name, guest_name, guest_status, number_of_guests);
 
 	fclose(file);
 
-	return TG_SUCCESS;
+	return HM_SUCCESS;
 }

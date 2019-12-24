@@ -5,34 +5,32 @@
 
 typedef struct guest
 {
-	char *name;
+	char name[MAX_NAME_LENGTH];
 	int budget;
 } guest_t;
 
 typedef struct room
 {
-	char *name;
+	char name[MAX_NAME_LENGTH];
 	int price;
 	int max_occupants;
 } room_t;
 
-/* Reads a grade from the file specified in filename*/
-int getGradeFromFile(char* filename);
-
 /**
-*	Reads a grade from a file in the grades directory.
+*	Reads information about all rooms in the hotel from the specified file and fills the
+*	specified rooms array.
 *
 *	Accepts
 *	-------
-*	grades_directory - a string representing the name of the directory containing the file.
-*   grade_filename - a string representing the name of the file containing the grade.
-*	grade - a pointer to an integer which will contain the grade value that was read.
+*   rooms_filename - a string representing the name of the file containing the rooms.
+*	rooms - an array to be filled with the rooms information.
+*	rooms_count - a pointer to an integer which will contain the actual number of rooms in the hotel.
 *
 *	Returns
 *	-------
 *	An EXIT_CODE inidcating wether the read operation was succefull.
 **/
-EXIT_CODE readGradeFromFile(const char *grades_directory, const char *grade_filename, int *grade);
+EXIT_CODE readRoomsFromFile(const char *rooms_filename, room_t rooms[], int *rooms_count);
 
 /**
 *	reads a single value from the file specified in filename.
