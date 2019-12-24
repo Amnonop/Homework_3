@@ -56,6 +56,9 @@ EXIT_CODE runHotel(const char *main_dir_path)
 	int rooms_count;
 	int guests_count;
 
+	HANDLE room_semaphore_handles[NUM_OF_ROOMS];
+	int room_semaphores_count;
+
 	HANDLE thread_handles[NUM_OF_GUESTS];
 	guest_thread_input_t thread_inputs[NUM_OF_GUESTS];
 	int threads_count;
@@ -68,6 +71,23 @@ EXIT_CODE runHotel(const char *main_dir_path)
 	exit_code = readGuestsFromFile(main_dir_path, guests_filename, guests, &guests_count);
 	if (exit_code != HM_SUCCESS)
 		return exit_code;
+
+	// Create semaphores for the rooms
+	for (room_semaphores_count = 0; room_semaphores_count < rooms_count; room_semaphores_count++)
+	{
+		room_semaphore_handles[room_semaphores_count] = CreateSemaphore(
+			NULL,												/* Default security attributes */
+			0,													/* Initial Count - the room is empty */
+			rooms[room_semaphores_count].max_occupants,			/* Maximum Count */
+			NULL);												/* un-named */
+
+		if (room_semaphore_handles[room_semaphores_count] == NULL)
+		{
+			printf("Failed to create semaphore. Terminating.\n");
+			exit_code = HM_SEMAPHORE_CREATE_FAILED;
+			// Cleanup
+		}
+	}
 
 	for (threads_count = 0; threads_count < guests_count; threads_count++)
 	{
@@ -136,6 +156,8 @@ DWORD WINAPI guestThread(LPVOID argument)
 	printf("looking a room for %s\n", thread_input->guest.name);
 	room_index = findRoom(thread_input->guest.budget, thread_input->rooms, thread_input->num_of_rooms);
 	printf("%s can stay in room %d named %s\n", thread_input->guest.name, room_index, (thread_input->rooms[room_index]).name);
+
+	// Use a semaphore to enter the room
 }
 
 int findRoom(int budget, room_t rooms[], int num_of_rooms)
