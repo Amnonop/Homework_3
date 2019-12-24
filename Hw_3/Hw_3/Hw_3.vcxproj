@@ -116,12 +116,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="FileHandle.c" />
+    <ClCompile Include="HotelManager.c" />
     <ClCompile Include="main.c" />
     <ClCompile Include="ThreadHandle.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Commons.h" />
     <ClInclude Include="FileHandle.h" />
+    <ClInclude Include="HotelManager.h" />
     <ClInclude Include="ThreadHandle.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

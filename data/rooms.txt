@@ -1,0 +1,4 @@
+RoomA 23 3
+bigroom 11 1
+OLDROOM 7 2
+roomForStudents 83 4
