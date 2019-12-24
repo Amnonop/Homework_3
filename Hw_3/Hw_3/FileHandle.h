@@ -3,6 +3,19 @@
 
 #include "Commons.h"
 
+typedef struct guest
+{
+	char *name;
+	int budget;
+} guest_t;
+
+typedef struct room
+{
+	char *name;
+	int price;
+	int max_occupants;
+} room_t;
+
 /* Reads a grade from the file specified in filename*/
 int getGradeFromFile(char* filename);
 
