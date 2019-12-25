@@ -15,6 +15,9 @@
 #define NUM_OF_ARGC 2
 #define MAIN_DIRECTORY_ARG_INDEX 1
 
+
+
+
 int main(int argc, char *argv[])
 {
 	EXIT_CODE exit_code = HM_SUCCESS;

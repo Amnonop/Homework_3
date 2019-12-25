@@ -16,7 +16,7 @@
 int getGuestsFromFile(char* filename, guest_t *guests_list[]);
 int getRoomsFromFile(char* filename, room_t *rooms_list[]);
 int computeGuestsNights(room_t *rooms_list[], int number_of_rooms, guest_t *guests_list[], int number_of_guests);
-void writeLogFile(guest_t *guests_list[], room_t *rooms_list[], int day_counter);
+
 
 typedef struct _room
 {
@@ -43,6 +43,7 @@ typedef struct _guest_thread_input
 	room_t *rooms;
 	int num_of_rooms;
 	HANDLE *room_semaphore_handles;
+	char **path;
 } guest_thread_input_t;
 
 static const char DAY_PASSED_EVENT_NAME[] = "day_passed_event";
@@ -54,8 +55,9 @@ int day;
 int guests_count;
 room_t rooms[NUM_OF_ROOMS];
 int rooms_count;
+//const char *main_dir_path;
 
-DWORD WINAPI guestThread(LPVOID argument);
+DWORD WINAPI guestThread(LPVOID argument, char *main_dir_path);
 int findRoom(int budget, room_t rooms[], int num_of_rooms);
 EXIT_CODE updateRoomGuestCount(GUEST_STATUS guest_status, room_t *room);
 DWORD WINAPI dayManagerThread(LPVOID arguments);
@@ -126,6 +128,8 @@ EXIT_CODE runHotel(const char *main_dir_path)
 		thread_inputs[threads_count].num_of_rooms = rooms_count;
 		thread_inputs[threads_count].room_semaphore_handles = room_semaphore_handles;
 
+		thread_inputs[threads_count].path = &main_dir_path;
+
 		thread_handles[threads_count] = createThreadSimple(
 			(LPTHREAD_START_ROUTINE)guestThread, 
 			(LPVOID)&(thread_inputs[threads_count]), 
@@ -174,7 +178,7 @@ EXIT_CODE runHotel(const char *main_dir_path)
 		/*put in rooms*/
 		/*update budget*/
 		/*remove out of money guests*/
-		writeLogFile(guests_list, rooms_list, day_counter); //not written yet
+		//writeLogFile(guests_list, rooms_list, day_counter); //not written yet
 		number_of_nights--; //the number of nights for the last guest to stay
 	}
 
@@ -191,6 +195,7 @@ DWORD WINAPI guestThread(LPVOID argument)
 	LONG previous_count;
 	HANDLE day_passed_event_handle;
 	DWORD event_wait_result;
+	const char *log_filename = "roomLog.txt";
 
 	thread_input = (guest_thread_input_t*)argument;
 
@@ -215,6 +220,7 @@ DWORD WINAPI guestThread(LPVOID argument)
 
 	//printf("%s entered room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
 	printf("%s %s IN %d\n", thread_input->rooms[room_index].name, thread_input->guest.name, day);
+	writeToFile(*(thread_input->path), log_filename, &(thread_input->rooms[room_index]), &(thread_input->guest), day);
 
 	// Wait the number of nights the guest can stay
 	while (thread_input->guest.budget != 0)
@@ -240,6 +246,7 @@ DWORD WINAPI guestThread(LPVOID argument)
 
 	//printf("%s left room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
 	printf("%s %s OUT %d\n", thread_input->rooms[room_index].name, thread_input->guest.name, day);
+	writeToFile(*(thread_input->path), log_filename, &(thread_input->rooms[room_index]), &(thread_input->guest), day);
 }
 
 int findRoom(int budget, room_t rooms[], int num_of_rooms)
@@ -461,10 +468,3 @@ int computeGuestsInRooms(room *rooms_list[], int number_of_rooms, guest *guests_
 }
 
 
-
-void writeLogFile(guest *guests_list[], room *rooms_list[], int day_counter)
-{
-
-	writeToFile;
-	return 0;
-}

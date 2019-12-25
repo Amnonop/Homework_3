@@ -251,10 +251,10 @@ EXIT_CODE writeToFile(const char *dir_path, char *log_filename, room_t *room, gu
 	switch (guest->status)
 	{
 	case GUEST_IN:
-		fprintf_s(file, "%s %s IN %d", room->name, guest->name, day);
+		fprintf_s(file, "%s %s IN %d\n", room->name, guest->name, day);
 		break;
 	case GUEST_OUT:
-		fprintf_s(file, "%s %s OUT %d", room->name, guest->name, day); 
+		fprintf_s(file, "%s %s OUT %d\n", room->name, guest->name, day); 
 		break;
 	default :
 		break;

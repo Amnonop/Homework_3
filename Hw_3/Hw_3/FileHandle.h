@@ -82,6 +82,6 @@ EXIT_CODE readFromFile(char *filename, int *value);
 *	-------
 *	An EXIT_CODE inidcating wether the write operation was succefull.
 **/
-EXIT_CODE writeToFile(char *filename, int value);
+EXIT_CODE writeToFile(const char *dir_path, char *log_filename, room_t *room, guest_t *guest, int day);
 
 #endif
