@@ -8,6 +8,7 @@ typedef struct guest
 {
 	char name[MAX_NAME_LENGTH];
 	int budget;
+	int nights_in_room;
 	GUEST_STATUS status;
 	int room_index;
 } guest_t;

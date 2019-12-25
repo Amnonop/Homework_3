@@ -231,19 +231,35 @@ EXIT_CODE readFromFile(char *filename, int *value)
 *	-------
 *	An EXIT_CODE inidcating wether the write operation was succefull.
 **/
-EXIT_CODE writeToFile(char *filename, char *room_name, char *guest_name,char *guest_status, int number_of_guests)
+EXIT_CODE writeToFile(const char *dir_path, char *log_filename, room_t *room, guest_t *guest, int day)
 {
 	FILE *file;
 	errno_t exit_code;
+	int log_filepath_length = 0;
+	char *log_filepath;
 
-	exit_code = fopen_s(&file, "roomsLog.txt", "w");
+	log_filepath_length = strlen(dir_path) + 2 + strlen(log_filename) + 1;
+	log_filepath = (char*)malloc(sizeof(char)*log_filepath_length);
+	sprintf_s(log_filepath, log_filepath_length, "%s//%s", dir_path, log_filename);
+
+	exit_code = fopen_s(&file, log_filepath, "a");
 	if (exit_code != 0)
 	{
-		printf("An error occured while openning file %s for writing.", filename);
+		printf("An error occured while openning file %s for writing.", log_filename);
 		return HM_FILE_OPEN_FAILED;
 	}
+	switch (guest->status)
+	{
+	case GUEST_IN:
+		fprintf_s(file, "%s %s IN %d", room->name, guest->name, day);
+		break;
+	case GUEST_OUT:
+		fprintf_s(file, "%s %s OUT %d", room->name, guest->name, day); 
+		break;
+	default :
+		break;
+	}
 
-	fprintf_s(file, "%s %s %s %d", room_name, guest_name, guest_status, number_of_guests);
 
 	fclose(file);
 

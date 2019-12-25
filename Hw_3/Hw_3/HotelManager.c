@@ -45,32 +45,38 @@ typedef struct _guest_thread_input
 	HANDLE *room_semaphore_handles;
 } guest_thread_input_t;
 
+static const char DAY_PASSED_EVENT_NAME[] = "day_passed_event";
+
 char *room_mutex_names[NUM_OF_ROOMS] = { "room_0_mutex", "room_1_mutex", "room_2_mutex", "room_3_mutex", "room_4_mutex" };
 HANDLE room_semaphore_handles[NUM_OF_ROOMS];
 guest_t guests[NUM_OF_GUESTS];
 int day;
+int guests_count;
+room_t rooms[NUM_OF_ROOMS];
+int rooms_count;
 
 DWORD WINAPI guestThread(LPVOID argument);
 int findRoom(int budget, room_t rooms[], int num_of_rooms);
 EXIT_CODE updateRoomGuestCount(GUEST_STATUS guest_status, room_t *room);
 DWORD WINAPI dayManagerThread(LPVOID arguments);
+HANDLE getDayPassedEvent();
 
 EXIT_CODE runHotel(const char *main_dir_path)
 {
 	const char *rooms_filename = "rooms.txt";
 	const char *guests_filename = "names.txt";
 	EXIT_CODE exit_code = HM_SUCCESS;
-	room_t rooms[NUM_OF_ROOMS];
-	int rooms_count;
-	int guests_count;
+
+
 	
 	int i;
 	int room_semaphores_count;
 
-	HANDLE thread_handles[NUM_OF_GUESTS];
+	HANDLE thread_handles[NUM_OF_GUESTS + 1];
 	guest_thread_input_t thread_inputs[NUM_OF_GUESTS];
 	int threads_count;
 	DWORD threads_wait_result;
+	HANDLE day_manager_handle;
 
 	day = 1;
 
@@ -132,11 +138,16 @@ EXIT_CODE runHotel(const char *main_dir_path)
 			// Cleanup
 		}
 
-		printf("created thread for guest %s\n", guests[threads_count].name);
+		//printf("created thread for guest %s\n", guests[threads_count].name);
 	}
 
+	thread_handles[threads_count] = createThreadSimple(
+		(LPTHREAD_START_ROUTINE)dayManagerThread, 
+		NULL, 
+		NULL);
+
 	threads_wait_result = WaitForMultipleObjects(
-		guests_count, 
+		guests_count + 1, 
 		thread_handles, 
 		TRUE, 
 		INFINITE);
@@ -178,34 +189,45 @@ DWORD WINAPI guestThread(LPVOID argument)
 	DWORD room_wait_result;
 	DWORD room_release_result;
 	LONG previous_count;
+	HANDLE day_passed_event_handle;
+	DWORD event_wait_result;
 
 	thread_input = (guest_thread_input_t*)argument;
 
 	// Look for a room
-	printf("looking a room for %s\n", thread_input->guest.name);
+	//printf("looking a room for %s\n", thread_input->guest.name);
 	room_index = findRoom(thread_input->guest.budget, thread_input->rooms, thread_input->num_of_rooms);
 	thread_input->guest.room_index = room_index;
-	printf("%s can stay in room %d named %s\n", thread_input->guest.name, room_index, (thread_input->rooms[room_index]).name);
+	//printf("%s can stay in room %d named %s\n", thread_input->guest.name, room_index, (thread_input->rooms[room_index]).name);
 
 	// Use a semaphore to enter the room
 	thread_input->guest.status = GUEST_WAITING;
-	printf("%s waiting to enter room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
+	//printf("%s waiting to enter room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
 	room_wait_result = WaitForSingleObject(room_semaphore_handles[room_index], INFINITE);
 	if (room_wait_result != WAIT_OBJECT_0)
 	{
 		// Report error
 	}
 
-	/* Start critical section */
 	// Update number of guests in the room
 	thread_input->guest.status = GUEST_IN;
 	exit_code = updateRoomGuestCount(GUEST_IN, &(thread_input->rooms[room_index]));
 
-	printf("%s entered room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
+	//printf("%s entered room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
+	printf("%s %s IN %d\n", thread_input->rooms[room_index].name, thread_input->guest.name, day);
 
 	// Wait the number of nights the guest can stay
+	while (thread_input->guest.budget != 0)
+	{
+		day_passed_event_handle = getDayPassedEvent();
+		//printf("%s waiting for the day to pass.\n", thread_input->guest.name);
+		event_wait_result = WaitForSingleObject(day_passed_event_handle, INFINITE);
+		ResetEvent(day_passed_event_handle);
 
-	/* End criticial section */
+		// A day has passed - update budget
+		thread_input->guest.budget = thread_input->guest.budget - thread_input->rooms[room_index].price;
+		printf("%s day %d budget %d\n", thread_input->guest.name, day, thread_input->guest.budget);
+	}
 
 	room_release_result = ReleaseSemaphore(room_semaphore_handles[room_index], 1, &previous_count); /* can set previous to null if not interested*/
 	if (room_release_result == FALSE)
@@ -216,7 +238,8 @@ DWORD WINAPI guestThread(LPVOID argument)
 	thread_input->guest.status = GUEST_OUT;
 	exit_code = updateRoomGuestCount(GUEST_OUT, &(thread_input->rooms[room_index]));
 
-	printf("%s left room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
+	//printf("%s left room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
+	printf("%s %s OUT %d\n", thread_input->rooms[room_index].name, thread_input->guest.name, day);
 }
 
 int findRoom(int budget, room_t rooms[], int num_of_rooms)
@@ -250,11 +273,11 @@ EXIT_CODE updateRoomGuestCount(GUEST_STATUS guest_status, room_t *room)
 	{
 		case GUEST_IN:
 			room->num_of_guests += 1;
-			printf("1 guest entered room %s, now has %d/%d guests.\n", room->name, room->num_of_guests, room->max_occupants);
+			//printf("1 guest entered room %s, now has %d/%d guests.\n", room->name, room->num_of_guests, room->max_occupants);
 			break;
 		case GUEST_OUT:
 			room->num_of_guests -= 1;
-			printf("1 guest left room %s, now has %d/%d guests.\n", room->name, room->num_of_guests, room->max_occupants);
+			//printf("1 guest left room %s, now has %d/%d guests.\n", room->name, room->num_of_guests, room->max_occupants);
 			break;
 		default:
 			break;
@@ -270,24 +293,53 @@ EXIT_CODE updateRoomGuestCount(GUEST_STATUS guest_status, room_t *room)
 DWORD WINAPI dayManagerThread(LPVOID arguments)
 {
 	int all_guests_handled = FALSE;
-	
+	int handled_guests = 0;
+	HANDLE day_passed_event_handle;
+	BOOL is_success;
 
 	while (true)
 	{
-		Sleep(1000);
-		//if last budjet>curr budget
-		if (room->)
-		{
-			int all_guests_handled = TRUE;
-		}
-		//if waiting for room & rooms is full
-		if ()
-		{
-			int all_guests_handled = TRUE;
-		}
+		Sleep(2000);
+
+		day_passed_event_handle = getDayPassedEvent();
+		day++;
+
+		is_success = SetEvent(day_passed_event_handle);
+		printf("\n----\nDAY %d\n----\n", day);
+		//for (int i = 0; i < guests_count; i++)
+		//{
+		//	//if last budjet>curr budget
+		//	if ((guests[i].status == GUEST_WAITING)&&(rooms[guests[i].room_index].num_of_guests == rooms[guests[i].room_index].max_occupants)	)
+		//	{
+		//		handled_guests++;
+		//	}
+		//	//if waiting for room & rooms is full
+		//	if ()
+		//	{
+		//		handled_guests++;
+		//	}
+		//}
+
 		// Check the status of all guests
 
 	}
+}
+
+HANDLE getDayPassedEvent()
+{
+	HANDLE day_passed_event_handle;
+	DWORD last_error;
+
+	day_passed_event_handle = CreateEvent(
+		NULL,
+		TRUE,
+		FALSE,
+		DAY_PASSED_EVENT_NAME
+	);
+
+	last_error = GetLastError();
+
+	return day_passed_event_handle;
 }
 
 int getGuestsFromFile(char* filename, guest *guests_list[])
