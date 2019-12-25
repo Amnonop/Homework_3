@@ -50,6 +50,7 @@ static const char DAY_PASSED_EVENT_NAME[] = "day_passed_event";
 
 char *room_mutex_names[NUM_OF_ROOMS] = { "room_0_mutex", "room_1_mutex", "room_2_mutex", "room_3_mutex", "room_4_mutex" };
 HANDLE room_semaphore_handles[NUM_OF_ROOMS];
+HANDLE log_file_mutex_handle;
 guest_t guests[NUM_OF_GUESTS];
 int day;
 int guests_count;
@@ -62,6 +63,10 @@ int findRoom(int budget, room_t rooms[], int num_of_rooms);
 EXIT_CODE updateRoomGuestCount(GUEST_STATUS guest_status, room_t *room);
 DWORD WINAPI dayManagerThread(LPVOID arguments);
 HANDLE getDayPassedEvent();
+
+
+
+
 
 EXIT_CODE runHotel(const char *main_dir_path)
 {
@@ -103,7 +108,14 @@ EXIT_CODE runHotel(const char *main_dir_path)
 			// Cleanup
 		}
 	}
-
+	log_file_mutex_handle = CreateMutex(
+		NULL,
+		FALSE,
+		"log_file_mutex_handle");
+	if (log_file_mutex_handle == NULL)
+	{
+		// Cleanup
+	}
 	// Create semaphores for the rooms
 	for (room_semaphores_count = 0; room_semaphores_count < rooms_count; room_semaphores_count++)
 	{
@@ -192,6 +204,8 @@ DWORD WINAPI guestThread(LPVOID argument)
 	int room_index = -1;
 	DWORD room_wait_result;
 	DWORD room_release_result;
+	DWORD wait_log_file_mutex;
+	DWORD release_log_file_mutex;
 	LONG previous_count;
 	HANDLE day_passed_event_handle;
 	DWORD event_wait_result;
@@ -219,8 +233,19 @@ DWORD WINAPI guestThread(LPVOID argument)
 	exit_code = updateRoomGuestCount(GUEST_IN, &(thread_input->rooms[room_index]));
 
 	//printf("%s entered room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
-	printf("%s %s IN %d\n", thread_input->rooms[room_index].name, thread_input->guest.name, day);
+	//printf("%s %s IN %d\n", thread_input->rooms[room_index].name, thread_input->guest.name, day);
+	wait_log_file_mutex = WaitForSingleObject(log_file_mutex_handle, INFINITE);
+	if (wait_log_file_mutex != WAIT_OBJECT_0)
+	{
+		if (wait_log_file_mutex == WAIT_ABANDONED)
+			return HM_MUTEX_ABANDONED;
+		else
+			return HM_MUTEX_WAIT_FAILED;
+	}
 	writeToFile(*(thread_input->path), log_filename, &(thread_input->rooms[room_index]), &(thread_input->guest), day);
+	release_log_file_mutex = ReleaseMutex(log_file_mutex_handle);
+	if (release_log_file_mutex == FALSE)
+		return HM_MUTEX_RELEASE_FAILED;
 
 	// Wait the number of nights the guest can stay
 	while (thread_input->guest.budget != 0)
@@ -232,7 +257,7 @@ DWORD WINAPI guestThread(LPVOID argument)
 
 		// A day has passed - update budget
 		thread_input->guest.budget = thread_input->guest.budget - thread_input->rooms[room_index].price;
-		printf("%s day %d budget %d\n", thread_input->guest.name, day, thread_input->guest.budget);
+		//printf("%s day %d budget %d\n", thread_input->guest.name, day, thread_input->guest.budget);
 	}
 
 	room_release_result = ReleaseSemaphore(room_semaphore_handles[room_index], 1, &previous_count); /* can set previous to null if not interested*/
@@ -245,8 +270,19 @@ DWORD WINAPI guestThread(LPVOID argument)
 	exit_code = updateRoomGuestCount(GUEST_OUT, &(thread_input->rooms[room_index]));
 
 	//printf("%s left room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
-	printf("%s %s OUT %d\n", thread_input->rooms[room_index].name, thread_input->guest.name, day);
+	//printf("%s %s OUT %d\n", thread_input->rooms[room_index].name, thread_input->guest.name, day);
+	wait_log_file_mutex = WaitForSingleObject(log_file_mutex_handle, INFINITE);
+	if (wait_log_file_mutex != WAIT_OBJECT_0)
+	{
+		if (wait_log_file_mutex == WAIT_ABANDONED)
+			return HM_MUTEX_ABANDONED;
+		else
+			return HM_MUTEX_WAIT_FAILED;
+	}
 	writeToFile(*(thread_input->path), log_filename, &(thread_input->rooms[room_index]), &(thread_input->guest), day);
+	release_log_file_mutex = ReleaseMutex(log_file_mutex_handle);
+	if (release_log_file_mutex == FALSE)
+		return HM_MUTEX_RELEASE_FAILED;
 }
 
 int findRoom(int budget, room_t rooms[], int num_of_rooms)
@@ -312,7 +348,7 @@ DWORD WINAPI dayManagerThread(LPVOID arguments)
 		day++;
 
 		is_success = SetEvent(day_passed_event_handle);
-		printf("\n----\nDAY %d\n----\n", day);
+		//printf("\n----\nDAY %d\n----\n", day);
 		//for (int i = 0; i < guests_count; i++)
 		//{
 		//	//if last budjet>curr budget
