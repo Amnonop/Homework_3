@@ -11,6 +11,13 @@ typedef int EXIT_CODE;
 #define FALSE 0
 
 typedef enum {
+	NONE,
+	GUEST_WAITING,
+	GUEST_IN,
+	GUEST_OUT
+} GUEST_STATUS;
+
+typedef enum {
 	HM_SUCCESS,
 	HM_THREADS_WAIT_FAILED,
 	HM_FILE_OPEN_FAILED,

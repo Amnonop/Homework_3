@@ -74,6 +74,8 @@ EXIT_CODE addRoom(char *room_info_line, room_t rooms[], int room_index)
 	int token_count = ROOM_NAME_INDEX;
 	room_t room;
 
+	room.num_of_guests = 0;
+
 	token = strtok_s(room_info_line, " ", &next_token);
 	while (token != NULL)
 	{

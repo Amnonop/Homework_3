@@ -45,9 +45,15 @@ typedef struct _guest_thread_input
 	HANDLE *room_semaphore_handles;
 } guest_thread_input_t;
 
+char *room_mutex_names[NUM_OF_ROOMS] = { "room_0_mutex", "room_1_mutex", "room_2_mutex", "room_3_mutex", "room_4_mutex" };
 HANDLE room_semaphore_handles[NUM_OF_ROOMS];
+guest_t guests[NUM_OF_GUESTS];
+int day;
 
 DWORD WINAPI guestThread(LPVOID argument);
+int findRoom(int budget, room_t rooms[], int num_of_rooms);
+EXIT_CODE updateRoomGuestCount(GUEST_STATUS guest_status, room_t *room);
+DWORD WINAPI dayManagerThread(LPVOID arguments);
 
 EXIT_CODE runHotel(const char *main_dir_path)
 {
@@ -55,17 +61,18 @@ EXIT_CODE runHotel(const char *main_dir_path)
 	const char *guests_filename = "names.txt";
 	EXIT_CODE exit_code = HM_SUCCESS;
 	room_t rooms[NUM_OF_ROOMS];
-	guest_t guests[NUM_OF_GUESTS];
 	int rooms_count;
 	int guests_count;
-
 	
+	int i;
 	int room_semaphores_count;
 
 	HANDLE thread_handles[NUM_OF_GUESTS];
 	guest_thread_input_t thread_inputs[NUM_OF_GUESTS];
 	int threads_count;
 	DWORD threads_wait_result;
+
+	day = 1;
 
 	exit_code = readRoomsFromFile(main_dir_path, rooms_filename, rooms, &rooms_count);
 	if (exit_code != HM_SUCCESS)
@@ -74,6 +81,20 @@ EXIT_CODE runHotel(const char *main_dir_path)
 	exit_code = readGuestsFromFile(main_dir_path, guests_filename, guests, &guests_count);
 	if (exit_code != HM_SUCCESS)
 		return exit_code;
+
+	// Create mutexes for the rooms
+	for (i = 0; i < rooms_count; i++)
+	{
+		rooms[i].room_mutex_handle = CreateMutex(
+			NULL, 
+			FALSE, 
+			room_mutex_names[i]);
+
+		if (rooms[i].room_mutex_handle == NULL)
+		{
+			// Cleanup
+		}
+	}
 
 	// Create semaphores for the rooms
 	for (room_semaphores_count = 0; room_semaphores_count < rooms_count; room_semaphores_count++)
@@ -151,6 +172,7 @@ EXIT_CODE runHotel(const char *main_dir_path)
 
 DWORD WINAPI guestThread(LPVOID argument)
 {
+	EXIT_CODE exit_code = HM_SUCCESS;
 	guest_thread_input_t *thread_input;
 	int room_index = -1;
 	DWORD room_wait_result;
@@ -162,9 +184,11 @@ DWORD WINAPI guestThread(LPVOID argument)
 	// Look for a room
 	printf("looking a room for %s\n", thread_input->guest.name);
 	room_index = findRoom(thread_input->guest.budget, thread_input->rooms, thread_input->num_of_rooms);
+	thread_input->guest.room_index = room_index;
 	printf("%s can stay in room %d named %s\n", thread_input->guest.name, room_index, (thread_input->rooms[room_index]).name);
 
 	// Use a semaphore to enter the room
+	thread_input->guest.status = GUEST_WAITING;
 	printf("%s waiting to enter room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
 	room_wait_result = WaitForSingleObject(room_semaphore_handles[room_index], INFINITE);
 	if (room_wait_result != WAIT_OBJECT_0)
@@ -173,6 +197,9 @@ DWORD WINAPI guestThread(LPVOID argument)
 	}
 
 	/* Start critical section */
+	// Update number of guests in the room
+	thread_input->guest.status = GUEST_IN;
+	exit_code = updateRoomGuestCount(GUEST_IN, &(thread_input->rooms[room_index]));
 
 	printf("%s entered room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
 
@@ -185,6 +212,9 @@ DWORD WINAPI guestThread(LPVOID argument)
 	{
 		// Report error
 	}
+
+	thread_input->guest.status = GUEST_OUT;
+	exit_code = updateRoomGuestCount(GUEST_OUT, &(thread_input->rooms[room_index]));
 
 	printf("%s left room %s\n", thread_input->guest.name, thread_input->rooms[room_index].name);
 }
@@ -200,6 +230,64 @@ int findRoom(int budget, room_t rooms[], int num_of_rooms)
 	}
 
 	return i;
+}
+
+EXIT_CODE updateRoomGuestCount(GUEST_STATUS guest_status, room_t *room)
+{
+	DWORD wait_result;
+	DWORD release_result;
+
+	wait_result = WaitForSingleObject(room->room_mutex_handle, INFINITE);
+	if (wait_result != WAIT_OBJECT_0)
+	{
+		if (wait_result == WAIT_ABANDONED)
+			return HM_MUTEX_ABANDONED;
+		else
+			return HM_MUTEX_WAIT_FAILED;
+	}
+
+	switch (guest_status)
+	{
+		case GUEST_IN:
+			room->num_of_guests += 1;
+			printf("1 guest entered room %s, now has %d/%d guests.\n", room->name, room->num_of_guests, room->max_occupants);
+			break;
+		case GUEST_OUT:
+			room->num_of_guests -= 1;
+			printf("1 guest left room %s, now has %d/%d guests.\n", room->name, room->num_of_guests, room->max_occupants);
+			break;
+		default:
+			break;
+	}
+
+	release_result = ReleaseMutex(room->room_mutex_handle);
+	if (release_result == FALSE)
+		return HM_MUTEX_RELEASE_FAILED;
+
+	return HM_SUCCESS;
+}
+
+DWORD WINAPI dayManagerThread(LPVOID arguments)
+{
+	int all_guests_handled = FALSE;
+	
+
+	while (true)
+	{
+		Sleep(1000);
+		//if last budjet>curr budget
+		if (room->)
+		{
+			int all_guests_handled = TRUE;
+		}
+		//if waiting for room & rooms is full
+		if ()
+		{
+			int all_guests_handled = TRUE;
+		}
+		// Check the status of all guests
+
+	}
 }
 
 int getGuestsFromFile(char* filename, guest *guests_list[])

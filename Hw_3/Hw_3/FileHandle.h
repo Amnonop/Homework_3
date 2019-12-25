@@ -1,12 +1,15 @@
 #ifndef FILE_HANDLE_H
 #define FILE_HANDLE_H
 
+#include <Windows.h>
 #include "Commons.h"
 
 typedef struct guest
 {
 	char name[MAX_NAME_LENGTH];
 	int budget;
+	GUEST_STATUS status;
+	int room_index;
 } guest_t;
 
 typedef struct room
@@ -14,6 +17,8 @@ typedef struct room
 	char name[MAX_NAME_LENGTH];
 	int price;
 	int max_occupants;
+	int num_of_guests;
+	HANDLE room_mutex_handle;
 } room_t;
 
 /**
