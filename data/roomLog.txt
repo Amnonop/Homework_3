@@ -1,1 +1,10 @@
-RoomA Shauli IN 1OLDROOM Avi IN 1OLDROOM Luther IN 1bigroom Hector OUT 3RoomA Shauli OUT 3OLDROOM Avi OUT 4OLDROOM Reuven IN 4OLDROOM Luther OUT 5OLDROOM Reuven OUT 6
+RoomA Shauli IN 1
+bigroom Hector IN 1
+OLDROOM Avi IN 1
+OLDROOM Luther IN 1
+bigroom Hector OUT 3
+RoomA Shauli OUT 3
+OLDROOM Avi OUT 4
+OLDROOM Reuven IN 4
+OLDROOM Luther OUT 5
+OLDROOM Reuven OUT 6
