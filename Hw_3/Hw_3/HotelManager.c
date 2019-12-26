@@ -339,6 +339,10 @@ DWORD WINAPI dayManagerThread(LPVOID arguments)
 		Sleep(2000);
 
 		day_passed_event_handle = getDayPassedEvent();
+		if (num_of_guests_out == guests_count)
+		{
+			return;
+		}
 		day++;
 
 		is_success = SetEvent(day_passed_event_handle);
