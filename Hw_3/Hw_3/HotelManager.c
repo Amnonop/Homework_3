@@ -56,6 +56,7 @@ int day;
 int guests_count;
 room_t rooms[NUM_OF_ROOMS];
 int rooms_count;
+int num_of_guests_out = 0;
 //const char *main_dir_path;
 
 DWORD WINAPI guestThread(LPVOID argument, char *main_dir_path);
@@ -73,20 +74,14 @@ EXIT_CODE runHotel(const char *main_dir_path)
 	const char *rooms_filename = "rooms.txt";
 	const char *guests_filename = "names.txt";
 	EXIT_CODE exit_code = HM_SUCCESS;
-
-
-	
 	int i;
 	int room_semaphores_count;
-
 	HANDLE thread_handles[NUM_OF_GUESTS + 1];
 	guest_thread_input_t thread_inputs[NUM_OF_GUESTS];
 	int threads_count;
 	DWORD threads_wait_result;
 	HANDLE day_manager_handle;
-
 	day = 1;
-
 	exit_code = readRoomsFromFile(main_dir_path, rooms_filename, rooms, &rooms_count);
 	if (exit_code != HM_SUCCESS)
 		return exit_code;
@@ -184,13 +179,11 @@ EXIT_CODE runHotel(const char *main_dir_path)
 	//num_of_guests = getGuestsFromFile(guests_file,  guests_list);
 	//num_of_rooms = getRoomsFromFile(rooms_file, rooms_list);
 	number_of_nights = computeGuestsNights(rooms_list, number_of_rooms, guests_list, number_of_guests);
+
+	//???????//
 	while (number_of_nights > 0)
 	{
 		day_counter++;
-		/*put in rooms*/
-		/*update budget*/
-		/*remove out of money guests*/
-		//writeLogFile(guests_list, rooms_list, day_counter); //not written yet
 		number_of_nights--; //the number of nights for the last guest to stay
 	}
 
@@ -280,6 +273,7 @@ DWORD WINAPI guestThread(LPVOID argument)
 			return HM_MUTEX_WAIT_FAILED;
 	}
 	writeToFile(*(thread_input->path), log_filename, &(thread_input->rooms[room_index]), &(thread_input->guest), day);
+	num_of_guests_out++;
 	release_log_file_mutex = ReleaseMutex(log_file_mutex_handle);
 	if (release_log_file_mutex == FALSE)
 		return HM_MUTEX_RELEASE_FAILED;
@@ -348,23 +342,6 @@ DWORD WINAPI dayManagerThread(LPVOID arguments)
 		day++;
 
 		is_success = SetEvent(day_passed_event_handle);
-		//printf("\n----\nDAY %d\n----\n", day);
-		//for (int i = 0; i < guests_count; i++)
-		//{
-		//	//if last budjet>curr budget
-		//	if ((guests[i].status == GUEST_WAITING)&&(rooms[guests[i].room_index].num_of_guests == rooms[guests[i].room_index].max_occupants)	)
-		//	{
-		//		handled_guests++;
-		//	}
-		//	//if waiting for room & rooms is full
-		//	if ()
-		//	{
-		//		handled_guests++;
-		//	}
-		//}
-
-		// Check the status of all guests
-
 	}
 }
 
