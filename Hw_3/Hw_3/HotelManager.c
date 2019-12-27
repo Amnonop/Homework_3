@@ -148,6 +148,7 @@ EXIT_CODE runHotel(const char *main_dir_path)
 		thread_handles, 
 		TRUE, 
 		INFINITE);
+	printf_s("%d\n", day);
 }
 
 
