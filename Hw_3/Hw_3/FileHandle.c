@@ -154,6 +154,9 @@ EXIT_CODE readGuestsFromFile(const char *dir_path, const char *guests_filename, 
 	return exit_code;
 }
 
+/*adds a guest to guests DB accepts a strng 
+from guests file, guests array and guest index*/
+
 EXIT_CODE addGuest(char *guest_info_line, guest_t guests[], int guest_index)
 {
 	EXIT_CODE exit_code = HM_SUCCESS;
