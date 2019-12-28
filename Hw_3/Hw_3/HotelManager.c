@@ -84,6 +84,11 @@ EXIT_CODE runHotel(const char *main_dir_path)
 	// Initialize
 	day = 1;
 
+	// Open the log file for writing
+	exit_code = openFileForWriting(main_dir_path, LOG_FILE_NAME);
+	if (exit_code != HM_SUCCESS)
+		return exit_code;
+
 	exit_code = readRoomsFromFile(main_dir_path, rooms_filename, rooms, &rooms_count);
 	if (exit_code != HM_SUCCESS)
 		return exit_code;
