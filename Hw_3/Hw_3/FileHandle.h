@@ -23,6 +23,20 @@ typedef struct room
 } room_t;
 
 /**
+*	Opens the specified file for writing. If the file already exists, it's contents is cleared.
+*
+*	Accepts
+*	-------
+*	dir_path - the path to the directory containing the file.
+*   filename - a string representing the name of the file to be opened.
+*
+*	Returns
+*	-------
+*	An EXIT_CODE inidcating wether the read operation was succefull.
+**/
+EXIT_CODE openFileForWriting(const char *dir_path, const char *filename);
+
+/**
 *	Reads information about all rooms in the hotel from the specified file and fills the
 *	specified rooms array.
 *

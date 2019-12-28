@@ -14,6 +14,42 @@ EXIT_CODE addRoom(char *room_info_line, room_t rooms[], int room_index);
 EXIT_CODE addGuest(char *guest_info_line, guest_t guests[], int guest_index);
 
 /**
+*	Opens the specified file for writing. If the file already exists, it's contents is cleared.
+*
+*	Accepts
+*	-------
+*	dir_path - the path to the directory containing the file.
+*   filename - a string representing the name of the file to be opened.
+*
+*	Returns
+*	-------
+*	An EXIT_CODE inidcating wether the read operation was succefull.
+**/
+EXIT_CODE openFileForWriting(const char *dir_path, const char *filename)
+{
+	int filepath_length;
+	char *filepath;
+	FILE *file;
+	errno_t file_open_code;
+
+	filepath_length = strlen(dir_path) + 2 + strlen(filename) + 1;
+	filepath = (char*)malloc(sizeof(char) * filepath_length);
+	sprintf_s(filepath, filepath_length, "%s//%s", dir_path, filename);
+
+	file_open_code = fopen_s(&file, filepath, "w");
+	if (file_open_code != 0)
+	{
+		printf("An error occured while openning file %s for writing.\n", filepath);
+		free(filepath);
+		return HM_FILE_OPEN_FAILED;
+	}
+
+	fclose(file);
+
+	return HM_SUCCESS;
+}
+
+/**
 *	Reads information about all rooms in the hotel from the specified file and fills the 
 *	specified rooms array.
 *
@@ -46,7 +82,7 @@ EXIT_CODE readRoomsFromFile(const char *dir_path, const char *rooms_filename, ro
 
 	if (file_open_code != 0)
 	{
-		printf("An error occured while openning file %s for reading.", rooms_filepath);
+		printf("An error occured while openning file %s for reading.\n", rooms_filepath);
 		free(rooms_filepath);
 		return HM_FILE_OPEN_FAILED;
 	}
