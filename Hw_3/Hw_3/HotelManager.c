@@ -13,26 +13,6 @@
 #include "ThreadHandle.h"
 
 /*structs*/
-/*rooms node in rooms DB*/
-typedef struct _room
-{
-	char *name;
-	int price;
-	int num_of_beds;
-	int num_of_guests;
-	HANDLE room_mutex_handle;
-} room;
-
-/*guestss node in rooms DB*/
-typedef struct _guest
-{
-	char *name;
-	int budget;
-	int nights;
-	char *room;
-	char *status;
-	HANDLE guestt_mutex_handle;
-} guest;
 
 /*single thread input database*/
 typedef struct _guest_thread_input
@@ -55,12 +35,13 @@ int guests_count;
 room_t rooms[NUM_OF_ROOMS];
 int rooms_count;
 int num_of_guests_out = 0;
+
+/*Function declarations*/
 DWORD WINAPI guestThread(LPVOID argument, char *main_dir_path);
 int findRoom(int budget, room_t rooms[], int num_of_rooms);
 EXIT_CODE updateRoomGuestCount(GUEST_STATUS guest_status, room_t *room);
 DWORD WINAPI dayManagerThread(LPVOID arguments);
 HANDLE getDayPassedEvent();
-
 
 /*main tread - runs the program from main, receives directory*/
 EXIT_CODE runHotel(const char *main_dir_path)
@@ -317,92 +298,5 @@ HANDLE getDayPassedEvent()
 	);
 	last_error = GetLastError();
 	return day_passed_event_handle;
-}
-
-/*fills guests DB from guests file*/
-int getGuestsFromFile(char* filename, guest *guests_list[])
-{
-	int sub_grade = 0;
-	FILE *fp;
-	errno_t error;
-	char* name = "";
-	int budget = 0;
-	int count = NUM_OF_GUESTS;
-	int i = 0;
-	error = fopen_s(&fp, filename, "r");
-
-	if (error != 0)
-		printf("An error occured while openning file %s for reading.", filename);
-
-	else if (fp)
-	{
-		for (i = 0; i < count; i++)
-		{
-			fscanf_s(fp, 256, "%s %d", name, budget);
-			strcpy_s(guests_list[i]->name, MAX_NAME_LENGTH, name);
-			guests_list[i]->budget = budget;
-			//nights left will be filled later
-		}
-
-	}
-	//returns number of guests
-	return i;
-}
-
-/*filling rooms DB from guests file*/
-int getRoomsFromFile(char* filename, room *rooms_list[])
-{
-	int sub_grade = 0;
-	FILE *fp;
-	errno_t error;
-	char* name = "";
-	int price = 0;
-	int num_of_beds = 0;
-	int count = NUM_OF_GUESTS;
-	int i = 0;
-	error = fopen_s(&fp, filename, "r");
-
-	if (error != 0)
-		printf("An error occured while openning file %s for reading.", filename);
-
-	else if (fp)
-	{
-		for (i = 0; i < count; i++)
-		{
-			fscanf_s(fp, 256, "%s %d %d", name, price, num_of_beds);
-			strcpy_s(rooms_list[i]->name, MAX_NAME_LENGTH, name);
-			rooms_list[i]->price = price;
-			rooms_list[i]->num_of_beds = num_of_beds;
-		}
-	}
-	//resutrns number of rooms
-	return i;
-}
-
-/*returns the number of nights for the last guest to stay*/
-int computeGuestsNights(room *rooms_list[], int number_of_rooms, guest *guests_list[], int number_of_guests)
-{
-	int max_number_of_nights = 0;
-	for (int i = 0; i < number_of_rooms; i++)
-	{
-		rooms_list[i]->num_of_guests = 0;
-	}
-	for (int i = 0; i < number_of_guests; i++)
-	{
-		for (int j = 0; j < number_of_rooms; j++)
-		{
-			if (rooms_list[j]->price % guests_list[i]->budget == 0)
-			{
-				guests_list[i]->nights = rooms_list[j]->price / guests_list[i]->budget;
-				if (guests_list[i]->nights > max_number_of_nights)
-				{
-					max_number_of_nights = guests_list[i]->nights;
-				}
-				i++;
-				j = 0;
-			}
-		}
-	}
-	return max_number_of_nights;
 }
 
