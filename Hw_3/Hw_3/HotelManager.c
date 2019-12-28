@@ -54,13 +54,13 @@ int num_of_guests_out = 0;
 int guest_status_count[THREAD_STATUS_COUNT];
 
 /*Function declarations*/
-DWORD WINAPI guestThread(LPVOID argument, char *main_dir_path);
+DWORD WINAPI guestThread(LPVOID argument);
 int findRoom(int budget, room_t rooms[], int num_of_rooms);
 EXIT_CODE updateRoomGuestCount(GUEST_STATUS guest_status, room_t *room);
 DWORD WINAPI dayManagerThread(LPVOID arguments);
 HANDLE getDayPassedEvent();
 EXIT_CODE updateGuestStatusCount(GUEST_THREAD_STATUS curr_guest_status, GUEST_THREAD_STATUS prev_guest_status, HANDLE guest_status_mutex_handle);
-EXIT_CODE countHandledGuests(HANDLE guest_status_mutex_handle, int *handled_guests_count);
+EXIT_CODE countHandledGuests(HANDLE guest_status_mutex_handle, int *handled_guests_count, int *out_guests_count);
 BOOL closeHandle(HANDLE handle);
 BOOL closeHandles(HANDLE handles_list[], int num_of_handles);
 BOOL closeRoomMutexHandles(room_t rooms[], int mutex_handles_count);
@@ -133,7 +133,6 @@ EXIT_CODE runHotel(const char *main_dir_path)
 		return HM_MUTEX_CREATE_FAILED;
 	}
 
-
 	// Create semaphores for the rooms
 	for (room_semaphores_count = 0; room_semaphores_count < rooms_count; room_semaphores_count++)
 	{
@@ -146,10 +145,14 @@ EXIT_CODE runHotel(const char *main_dir_path)
 		if (room_semaphore_handles[room_semaphores_count] == NULL)
 		{
 			printf("Failed to create semaphore. Terminating.\n");
-			exit_code = HM_SEMAPHORE_CREATE_FAILED;
-			// Cleanup
+
+			closeRoomMutexHandles(rooms, rooms_count);
+			closeHandle(log_file_mutex_handle);
+			closeHandles(room_semaphore_handles, room_semaphores_count);
+			return HM_SEMAPHORE_CREATE_FAILED;
 		}
 	}
+
 	//thread per guest creations
 	for (threads_count = 0; threads_count < guests_count; threads_count++)
 	{
@@ -165,11 +168,16 @@ EXIT_CODE runHotel(const char *main_dir_path)
 			(LPTHREAD_START_ROUTINE)guestThread,
 			(LPVOID)&(thread_inputs[threads_count]),
 			NULL);
+
 		if (thread_handles[threads_count] == NULL)
 		{
 			printf("Failed to create thread. Terminating.\n");
-			exit_code = HM_THREAD_CREATE_FAILED;
-			// Cleanup
+			
+			closeRoomMutexHandles(rooms, rooms_count);
+			closeHandle(log_file_mutex_handle);
+			closeHandles(room_semaphore_handles, room_semaphores_count);
+			closeHandles(thread_handles, threads_count);
+			return HM_THREAD_CREATE_FAILED;
 		}
 	}
 
@@ -178,12 +186,36 @@ EXIT_CODE runHotel(const char *main_dir_path)
 		(LPTHREAD_START_ROUTINE)dayManagerThread, 
 		(LPVOID)&day_manager_input, 
 		NULL);
+
+	if (thread_handles[threads_count] == NULL)
+	{
+		closeRoomMutexHandles(rooms, rooms_count);
+		closeHandle(log_file_mutex_handle);
+		closeHandles(room_semaphore_handles, room_semaphores_count);
+		closeHandles(thread_handles, threads_count);
+		return HM_THREAD_CREATE_FAILED;
+	}
+
+	threads_count++;
+
+	// Wait for all threads to finish their execution
 	threads_wait_result = WaitForMultipleObjects(
-		guests_count + 1, 
+		threads_count, 
 		thread_handles, 
 		TRUE, 
 		INFINITE);
+
+	// Print the number of days it took to manage the hotel
 	printf("%d\n", day);
+
+	// Close all created handles
+	closeRoomMutexHandles(rooms, rooms_count);
+	closeHandle(log_file_mutex_handle);
+	closeHandles(room_semaphore_handles, room_semaphores_count);
+	closeHandles(thread_handles, threads_count);
+
+	// Return with success code
+	return HM_SUCCESS;
 }
 
 
