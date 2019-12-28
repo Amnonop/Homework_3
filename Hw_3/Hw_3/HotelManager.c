@@ -84,6 +84,11 @@ EXIT_CODE runHotel(const char *main_dir_path)
 	// Initialize
 	day = 1;
 
+	// Open the log file for writing
+	exit_code = openFileForWriting(main_dir_path, LOG_FILE_NAME);
+	if (exit_code != HM_SUCCESS)
+		return exit_code;
+
 	exit_code = readRoomsFromFile(main_dir_path, rooms_filename, rooms, &rooms_count);
 	if (exit_code != HM_SUCCESS)
 		return exit_code;
@@ -229,12 +234,9 @@ DWORD WINAPI guestThread(LPVOID argument)
 	int room_index = -1;
 	DWORD room_wait_result;
 	DWORD room_release_result;
-	DWORD wait_log_file_mutex;
-	DWORD release_log_file_mutex;
 	LONG previous_count;
 	HANDLE day_passed_event_handle;
 	DWORD event_wait_result;
-	const char *log_filename = "roomLog.txt";
 	thread_input = (guest_thread_input_t*)argument;
 
 	// Look for a room
@@ -262,20 +264,10 @@ DWORD WINAPI guestThread(LPVOID argument)
 
 	thread_input->guest.status = GUEST_IN;
 	exit_code = updateRoomGuestCount(GUEST_IN, &(thread_input->rooms[room_index]));
-	//critical part - write to log file
-	wait_log_file_mutex = WaitForSingleObject(log_file_mutex_handle, INFINITE);
-	if (wait_log_file_mutex != WAIT_OBJECT_0)
-	{
-		if (wait_log_file_mutex == WAIT_ABANDONED)
-			return HM_MUTEX_ABANDONED;
-		else
-			return HM_MUTEX_WAIT_FAILED;
-	}
-	writeToFile(*(thread_input->path), log_filename, &(thread_input->rooms[room_index]), &(thread_input->guest), day);
-	release_log_file_mutex = ReleaseMutex(log_file_mutex_handle);
-	if (release_log_file_mutex == FALSE)
-		return HM_MUTEX_RELEASE_FAILED;
-	//end of critical part
+	
+	// Write guest status to log file
+	writeGuestStatusToLogFile(thread_input, room_index);
+
 	// Wait the number of nights the guest can stay
 	while (thread_input->guest.budget != 0)
 	{
@@ -301,21 +293,10 @@ DWORD WINAPI guestThread(LPVOID argument)
 
 	thread_input->guest.status = GUEST_OUT;
 	exit_code = updateRoomGuestCount(GUEST_OUT, &(thread_input->rooms[room_index]));
-	//critical part - write to log file
-	wait_log_file_mutex = WaitForSingleObject(log_file_mutex_handle, INFINITE);
-	if (wait_log_file_mutex != WAIT_OBJECT_0)
-	{
-		if (wait_log_file_mutex == WAIT_ABANDONED)
-			return HM_MUTEX_ABANDONED;
-		else
-			return HM_MUTEX_WAIT_FAILED;
-	}
-	writeToFile(*(thread_input->path), log_filename, &(thread_input->rooms[room_index]), &(thread_input->guest), day);
-	num_of_guests_out++;
-	release_log_file_mutex = ReleaseMutex(log_file_mutex_handle);
-	if (release_log_file_mutex == FALSE)
-		return HM_MUTEX_RELEASE_FAILED;
-	//end of critical part
+	
+	// Write status to log file
+	exit_code = writeGuestStatusToLogFile(thread_input, room_index);
+	return exit_code;
 }
 
 /* find every guest his desired room, return the room index to the guest thread*/
@@ -390,6 +371,36 @@ EXIT_CODE updateGuestStatusCount(GUEST_THREAD_STATUS curr_guest_status, GUEST_TH
 		return HM_MUTEX_RELEASE_FAILED;
 
 	return HM_SUCCESS;
+}
+
+EXIT_CODE writeGuestStatusToLogFile(guest_thread_input_t *thread_input, int room_index)
+{
+	DWORD wait_result;
+	BOOL release_result;
+	EXIT_CODE exit_code;
+
+	wait_result = WaitForSingleObject(log_file_mutex_handle, INFINITE);
+	if (wait_result != WAIT_OBJECT_0)
+	{
+		if (wait_result == WAIT_ABANDONED)
+			return HM_MUTEX_ABANDONED;
+		else
+			return HM_MUTEX_WAIT_FAILED;
+	}
+
+	exit_code = writeGuestStatusToLog(
+		*(thread_input->path), 
+		LOG_FILE_NAME, 
+		&(thread_input->rooms[room_index]), 
+		&(thread_input->guest), 
+		day);
+	num_of_guests_out++;
+	
+	release_result = ReleaseMutex(log_file_mutex_handle);
+	if (release_result == FALSE)
+		return HM_MUTEX_RELEASE_FAILED;
+
+	return exit_code;
 }
 
 /*changing and counting the days/ nights in the hotel, sends an event to all guests threads*/

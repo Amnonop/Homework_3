@@ -31,4 +31,6 @@ typedef enum {
 	HM_NOT_ENOUGH_COMMAND_LINE_ARGUMENTS
 } EXIT_CODES;
 
+static const char *LOG_FILE_NAME = "roomLog.txt";
+
 #endif
