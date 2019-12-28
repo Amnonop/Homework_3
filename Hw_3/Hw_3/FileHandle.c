@@ -227,50 +227,21 @@ EXIT_CODE addGuest(char *guest_info_line, guest_t guests[], int guest_index)
 }
 
 /**
-*	reads a single value from the file specified in filename.
-*
-*	Accepts
-*	-------
-*	filename - a string representing the name of the file.
-*	value - a pointer to an integer which will contain the value that was read.
-*
-*	Returns
-*	-------
-*	An EXIT_CODE inidcating wether the read operation was succefull.
-**/
-EXIT_CODE readFromFile(char *filename, int *value)
-{
-	FILE *file;
-	errno_t exit_code;
-
-	exit_code = fopen_s(&file, filename, "r");
-
-	if (exit_code != 0)
-	{
-		printf("An error occured while openning file %s for reading.", filename);
-		return HM_FILE_OPEN_FAILED;
-	}
-
-	fscanf_s(file, "%d", value);
-
-	fclose(file);
-
-	return 0;
-}
-
-/**
-*	Writes the specified value to the file specified in filename.
+*	Writes the status of the specified guest to the log file.
 *	
 *	Accepts
 *	-------
+*	dir_path - path to the directory containing the log file.
 *	filename - a string representing the name of the file.
-*	value - an integer containing the value that should be written into the file.
+*	room - a room_t struct representing the room the guest belongs to.
+*	guest - a guest_t struct representing the guest to log.
+*	day - an integer representing the current day.
 *
 *	Returns
 *	-------
 *	An EXIT_CODE inidcating wether the write operation was succefull.
 **/
-EXIT_CODE writeToFile(const char *dir_path, char *log_filename, room_t *room, guest_t *guest, int day)
+EXIT_CODE writeGuestStatusToLog(const char *dir_path, char *log_filename, room_t *room, guest_t *guest, int day)
 {
 	FILE *file;
 	errno_t exit_code;
@@ -284,9 +255,10 @@ EXIT_CODE writeToFile(const char *dir_path, char *log_filename, room_t *room, gu
 	exit_code = fopen_s(&file, log_filepath, "a");
 	if (exit_code != 0)
 	{
-		printf("An error occured while openning file %s for writing.", log_filename);
+		printf("An error occured while openning file %s for writing.\n", log_filename);
 		return HM_FILE_OPEN_FAILED;
 	}
+
 	switch (guest->status)
 	{
 	case GUEST_IN:
@@ -298,7 +270,6 @@ EXIT_CODE writeToFile(const char *dir_path, char *log_filename, room_t *room, gu
 	default :
 		break;
 	}
-
 
 	fclose(file);
 

@@ -1,6 +1,6 @@
 RoomA Shauli IN 1
-bigroom Hector IN 1
 OLDROOM Avi IN 1
+bigroom Hector IN 1
 OLDROOM Luther IN 1
 RoomA Shauli OUT 3
 bigroom Hector OUT 3

@@ -71,31 +71,20 @@ EXIT_CODE readRoomsFromFile(const char *dir_path, const char *rooms_filename, ro
 EXIT_CODE readGuestsFromFile(const char *dir_path, const char *guests_filename, guest_t guests[], int *guest_count);
 
 /**
-*	reads a single value from the file specified in filename.
+*	Writes the status of the specified guest to the log file.
 *
 *	Accepts
 *	-------
+*	dir_path - path to the directory containing the log file.
 *	filename - a string representing the name of the file.
-*	value - a pointer to an integer which will contain the value that was read.
-*
-*	Returns
-*	-------
-*	An EXIT_CODE inidcating wether the read operation was succefull.
-**/
-EXIT_CODE readFromFile(char *filename, int *value);
-
-/**
-*	Writes the specified value to the file specified in filename.
-*
-*	Accepts
-*	-------
-*	filename - a string representing the name of the file.
-*	value - an integer containing the value that should be written into the file.
+*	room - a room_t struct representing the room the guest belongs to.
+*	guest - a guest_t struct representing the guest to log.
+*	day - an integer representing the current day.
 *
 *	Returns
 *	-------
 *	An EXIT_CODE inidcating wether the write operation was succefull.
 **/
-EXIT_CODE writeToFile(const char *dir_path, char *log_filename, room_t *room, guest_t *guest, int day);
+EXIT_CODE writeGuestStatusToLog(const char *dir_path, char *log_filename, room_t *room, guest_t *guest, int day);
 
 #endif
