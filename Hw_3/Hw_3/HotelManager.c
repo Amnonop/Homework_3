@@ -61,6 +61,9 @@ DWORD WINAPI dayManagerThread(LPVOID arguments);
 HANDLE getDayPassedEvent();
 EXIT_CODE updateGuestStatusCount(GUEST_THREAD_STATUS curr_guest_status, GUEST_THREAD_STATUS prev_guest_status, HANDLE guest_status_mutex_handle);
 EXIT_CODE countHandledGuests(HANDLE guest_status_mutex_handle, int *handled_guests_count);
+BOOL closeHandle(HANDLE handle);
+BOOL closeHandles(HANDLE handles_list[], int num_of_handles);
+BOOL closeRoomMutexHandles(room_t rooms[], int mutex_handles_count);
 
 /*main tread - runs the program from main, receives directory*/
 EXIT_CODE runHotel(const char *main_dir_path)
@@ -104,7 +107,8 @@ EXIT_CODE runHotel(const char *main_dir_path)
 
 		if (rooms[i].room_mutex_handle == NULL)
 		{
-			// Cleanup
+			closeRoomMutexHandles(rooms, i);
+			return HM_MUTEX_CREATE_FAILED;
 		}
 	}
 
@@ -114,7 +118,8 @@ EXIT_CODE runHotel(const char *main_dir_path)
 		"log_file_mutex_handle");
 	if (log_file_mutex_handle == NULL)
 	{
-		// Cleanup
+		closeRoomMutexHandles(rooms, rooms_count);
+		return HM_MUTEX_CREATE_FAILED;
 	}
 
 	guest_status_mutex_handle = CreateMutex(
@@ -123,7 +128,9 @@ EXIT_CODE runHotel(const char *main_dir_path)
 		"guest_status_mutex");
 	if (guest_status_mutex_handle == NULL)
 	{
-		// Clenup
+		closeRoomMutexHandles(rooms, rooms_count);
+		closeHandle(log_file_mutex_handle);
+		return HM_MUTEX_CREATE_FAILED;
 	}
 
 
@@ -427,5 +434,37 @@ HANDLE getDayPassedEvent()
 	);
 	last_error = GetLastError();
 	return day_passed_event_handle;
+}
+
+BOOL closeHandle(HANDLE handle)
+{
+	BOOL close_handle_result;
+
+	close_handle_result = CloseHandle(handle);
+	return close_handle_result;
+}
+
+BOOL closeHandles(HANDLE handles_list[], int num_of_handles)
+{
+	int i;
+
+	for (i = 0; i < num_of_handles; i++)
+	{
+		CloseHandle(handles_list[i]);
+	}
+
+	return TRUE;
+}
+
+BOOL closeRoomMutexHandles(room_t rooms[], int mutex_handles_count)
+{
+	int i;
+
+	for (i = 0; i < mutex_handles_count; i++)
+	{
+		CloseHandle(rooms[i].room_mutex_handle);
+	}
+
+	return TRUE;
 }
 
