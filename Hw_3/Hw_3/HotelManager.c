@@ -64,8 +64,19 @@ EXIT_CODE countHandledGuests(HANDLE guest_status_mutex_handle, int *handled_gues
 BOOL closeHandle(HANDLE handle);
 BOOL closeHandles(HANDLE handles_list[], int num_of_handles);
 BOOL closeRoomMutexHandles(room_t rooms[], int mutex_handles_count);
+EXIT_CODE writeGuestStatusToLogFile(guest_thread_input_t *thread_input, int room_index);
 
-/*main tread - runs the program from main, receives directory*/
+/**
+*	Executes the program. It opens a thread for each guest and a thread for the days manager. 
+*
+*	Accepts
+*	-------
+*	main_dir_path - the path to the directory containing the input files for the program.
+*
+*	Returns
+*	-------
+*	An EXIT_CODE inidcating wether the program run was successfull.
+**/
 EXIT_CODE runHotel(const char *main_dir_path)
 {
 	const char *rooms_filename = "rooms.txt";
@@ -224,9 +235,18 @@ EXIT_CODE runHotel(const char *main_dir_path)
 }
 
 
-/*runs the thread of every guest.
-called from runHotel 
-receives the arguments pre-defined per guests-thread - see:guest-thread arguments*/
+/**
+*	Runs the guest logic in a separate thread.
+*
+*	Accepts
+*	-------
+*	argument - a guest_thread_input_t struct which holds all the fields relevant for the execution
+*				of the guest logic.
+*
+*	Returns
+*	-------
+*	An DWORD inidcating wether the thread exited successfully.
+**/
 DWORD WINAPI guestThread(LPVOID argument)
 {
 	EXIT_CODE exit_code = HM_SUCCESS;
@@ -299,7 +319,19 @@ DWORD WINAPI guestThread(LPVOID argument)
 	return exit_code;
 }
 
-/* find every guest his desired room, return the room index to the guest thread*/
+/**
+*	Finds a room that fits the specified budget.
+*
+*	Accepts
+*	-------
+*	budget - an integer representing the budget.
+*	rooms - an array of room_t structs representing the rooms in the hotel.
+*	num_of_rooms - an integer representing the number of actual rooms in the hotel.
+*
+*	Returns
+*	-------
+*	An integer representing the index of the room in the rooms array that fits the budget.
+**/
 int findRoom(int budget, room_t rooms[], int num_of_rooms)
 {
 	int i;
@@ -313,7 +345,18 @@ int findRoom(int budget, room_t rooms[], int num_of_rooms)
 	return i;
 }
 
-/*updates how many guests in the room after a single operation or more in the hotel*/
+/**
+*	Updated the number of guests in a specified room.
+*
+*	Accepts
+*	-------
+*	guest_status - a value from the GUEST_STATUS enum representing the status of the guest in the room.
+*	room - a pointer to a room_t struct which guest count needs to be updated.
+*
+*	Returns
+*	-------
+*	An integer representing wether the operation was successfull.
+**/
 EXIT_CODE updateRoomGuestCount(GUEST_STATUS guest_status, room_t *room)
 {
 	DWORD wait_result;
@@ -348,6 +391,21 @@ EXIT_CODE updateRoomGuestCount(GUEST_STATUS guest_status, room_t *room)
 	return HM_SUCCESS;
 }
 
+/**
+*	Updated the status of the guest thread.
+*
+*	Accepts
+*	-------
+*	curr_guest_status -			a value from the GUEST_THREAD_STATUS enum representing the status 
+								of the guest's thread.
+*	prev_guest_status -			a value from the GUEST_THREAD_STATUS enum representing the previous
+								state of the guest's thread.
+*	guest_status_mutex_handle - a handle to a mutex to lock the guest_status_count array.
+*
+*	Returns
+*	-------
+*	An integer representing wether the operation was successfull.
+**/
 EXIT_CODE updateGuestStatusCount(GUEST_THREAD_STATUS curr_guest_status, GUEST_THREAD_STATUS prev_guest_status, HANDLE guest_status_mutex_handle)
 {
 	DWORD handle_result;
@@ -373,6 +431,19 @@ EXIT_CODE updateGuestStatusCount(GUEST_THREAD_STATUS curr_guest_status, GUEST_TH
 	return HM_SUCCESS;
 }
 
+/**
+*	Synchronizes writing a guest's status to file.
+*
+*	Accepts
+*	-------
+*	thread_input -	a pointer to a guest_thread_input_t struct containing the thread arguments for the
+*					guest thread.
+*	room_index -	an integer representing the room the guest is assigned to.
+*
+*	Returns
+*	-------
+*	An integer representing wether the operation was successfull.
+**/
 EXIT_CODE writeGuestStatusToLogFile(guest_thread_input_t *thread_input, int room_index)
 {
 	DWORD wait_result;
@@ -403,7 +474,20 @@ EXIT_CODE writeGuestStatusToLogFile(guest_thread_input_t *thread_input, int room
 	return exit_code;
 }
 
-/*changing and counting the days/ nights in the hotel, sends an event to all guests threads*/
+/**
+*	This thread manages the passings of the days.
+*	To signal a day has passed, it checks the status of all guest threads currently running.
+*	When all guests are either waiting for a room, waiting for the day to pass or left the hotel,
+*	it signals the day passed event.
+*
+*	Accepts
+*	-------
+*	arguments -	a pointer to a day_manager_input_t struct containing the thread arguments.
+*
+*	Returns
+*	-------
+*	An integer representing wether the operation was successfull.
+**/
 DWORD WINAPI dayManagerThread(LPVOID arguments)
 {
 	day_manager_input_t *thread_input;
@@ -428,13 +512,30 @@ DWORD WINAPI dayManagerThread(LPVOID arguments)
 		{
 			day_passed_event_handle = getDayPassedEvent();
 			day++;
-			printf("\n---- DAY %d ----\n", day);
+			//printf("\n---- DAY %d ----\n", day);
 			//event : day has passed
 			is_success = SetEvent(day_passed_event_handle);
 		}
 	}
 }
 
+/**
+*	Counts the number of guests that had been handled so far in the day.
+*	A guest is considered handled if it's thread's status is either waiting to enter a room, 
+*	waiting for the day to pass or the guest is out of the room and left the hotel.
+*
+*	Accepts
+*	-------
+*	guest_status_mutex_handle -		a handle to a mutex to lock the guest_status_count array.
+*	handled_guests_count -			a pointer to an integer that will be assigned the number of guests
+*									handled.
+*	out_guests_count -				a pointer to an integer that will be assigned the number of guests 
+*									that left the hotel.
+*
+*	Returns
+*	-------
+*	An integer representing wether the operation was successfull.
+**/
 EXIT_CODE countHandledGuests(HANDLE guest_status_mutex_handle, int *handled_guests_count, int *out_guests_count)
 {
 	DWORD handle_result;
@@ -454,7 +555,7 @@ EXIT_CODE countHandledGuests(HANDLE guest_status_mutex_handle, int *handled_gues
 		+ guest_status_count[IN_WAITING_FOR_DAY] 
 		+ guest_status_count[OUT_DONE];
 	*out_guests_count = guest_status_count[OUT_DONE];
-	printf("waiting for room = %d, waiting for day = %d, out = %d\n", guest_status_count[WAITING_TO_ENTER_ROOM], guest_status_count[IN_WAITING_FOR_DAY], guest_status_count[OUT_DONE]);
+	//printf("waiting for room = %d, waiting for day = %d, out = %d\n", guest_status_count[WAITING_TO_ENTER_ROOM], guest_status_count[IN_WAITING_FOR_DAY], guest_status_count[OUT_DONE]);
 	/* End critical section */
 
 	handle_result = ReleaseMutex(guest_status_mutex_handle);
@@ -464,7 +565,16 @@ EXIT_CODE countHandledGuests(HANDLE guest_status_mutex_handle, int *handled_gues
 	return HM_SUCCESS;
 }
 
-//for the day to get passed - handking the event
+/**
+*	Acquires a handle to the day passed event.
+*
+*	Accepts
+*	-------
+*
+*	Returns
+*	-------
+*	A handle to the day passed event.
+**/
 HANDLE getDayPassedEvent()
 {
 	HANDLE day_passed_event_handle;
@@ -479,6 +589,17 @@ HANDLE getDayPassedEvent()
 	return day_passed_event_handle;
 }
 
+/**
+*	Closes a specified handle.
+*
+*	Accepts
+*	-------
+*	handle - a handle to be closed.
+*
+*	Returns
+*	-------
+*	True if the close succeeded, otherwise returns false.
+**/
 BOOL closeHandle(HANDLE handle)
 {
 	BOOL close_handle_result;
@@ -487,6 +608,18 @@ BOOL closeHandle(HANDLE handle)
 	return close_handle_result;
 }
 
+/**
+*	Closes all handles in a specified array.
+*
+*	Accepts
+*	-------
+*	handles_list -		an array of handles.
+*	num_of_handles -	an integer representing the number of handles in the array to be closed.
+*
+*	Returns
+*	-------
+*	True if the close succeeded, otherwise returns false.
+**/
 BOOL closeHandles(HANDLE handles_list[], int num_of_handles)
 {
 	int i;
@@ -499,15 +632,31 @@ BOOL closeHandles(HANDLE handles_list[], int num_of_handles)
 	return TRUE;
 }
 
+/**
+*	Closes all mutex handles in the rooms array.
+*
+*	Accepts
+*	-------
+*	rooms -					an array of room_t structs represening the rooms in the hotel.
+*	mutex_handles_count -	an integer representing the number of handles in the array to be closed.
+*
+*	Returns
+*	-------
+*	True if the close succeeded, otherwise returns false.
+**/
 BOOL closeRoomMutexHandles(room_t rooms[], int mutex_handles_count)
 {
+	BOOL close_result;
+	BOOL return_value;
 	int i;
 
+	return_value = TRUE;
 	for (i = 0; i < mutex_handles_count; i++)
 	{
-		CloseHandle(rooms[i].room_mutex_handle);
+		close_result = CloseHandle(rooms[i].room_mutex_handle);
+		return_value &= close_result;
 	}
 
-	return TRUE;
+	return return_value;
 }
 
